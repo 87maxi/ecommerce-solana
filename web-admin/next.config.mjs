@@ -1,8 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    // Configuración para Turbopack (Next.js 15+)
+    turbo: {
+      resolveAlias: {
+        fs: false,
+        'pino-pretty': false,
+        lokijs: false,
+        encoding: false,
+      },
+    },
+  },
+  // Configuración de Webpack para el bundle del cliente (Retrocompatibilidad)
   webpack: (config, { isServer }) => {
     if (!isServer) {
-      // Excluir librerías de Node.js del bundle del cliente
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,

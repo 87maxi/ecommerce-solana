@@ -9,16 +9,19 @@ import { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useRole } from '../contexts/RoleContext';
 
+// Importación de estilos usando sintaxis ESM para mejor compatibilidad con Turbopack
+import '@solana/wallet-adapter-react-ui/styles.css';
+
 export function Sidebar() {
   const pathname = usePathname();
   const { connected } = useWallet();
   const { roleInfo } = useRole();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Show connect screen when not connected
+  // Vista de conexión cuando la wallet no está vinculada
   if (!connected) {
     return (
-      <div className="hidden md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 border-r border-cyan-500/20">
+      <div className="hidden md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 sidebar-gradient border-r border-cyan-500/20">
         <div className="flex flex-col flex-grow justify-center items-center p-8">
           <div className="w-24 h-24 mb-8 relative">
             <div className="absolute inset-0 bg-cyan-500 rounded-full blur-xl opacity-20 animate-pulse"></div>
@@ -68,30 +71,11 @@ export function Sidebar() {
     );
   }
 
-  // Filter navigation items based on user role
+  // Filtrar navegación según el rol del usuario
   const filteredNavigation = NAVIGATION.filter(item => {
-    // If no roles specified, show to everyone (e.g., Dashboard)
     if (!item.roles || item.roles.length === 0) return true;
-
-    // Admin sees everything
     if (roleInfo.role === 'admin') return true;
-
-    // Unregistered users only see items with no specific roles or specifically 'unregistered'
-    if (
-      roleInfo.role === 'unregistered' ||
-      roleInfo.role === 'loading' ||
-      roleInfo.role === 'error'
-    ) {
-      return item.roles.includes('unregistered');
-    }
-
-    // Company owner checks
-    if (roleInfo.role === 'company_owner') {
-      // Allow if specifically required
-      return item.roles.includes('company_owner');
-    }
-
-    return false;
+    return item.roles.includes(roleInfo.role as any);
   });
 
   return (
@@ -124,13 +108,7 @@ export function Sidebar() {
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
             {filteredNavigation.map(item => {
               const isActive = pathname === item.href;
-              // Robustly handle the icon component
-              const IconComponent =
-                typeof item.icon === 'object' && item.icon !== null
-                  ? Object.values(item.icon)[0]
-                  : item.icon;
-
-              if (!IconComponent) return null; // Prevent rendering if the icon is invalid
+              const Icon = item.icon;
 
               return (
                 <Link
@@ -146,9 +124,8 @@ export function Sidebar() {
                     }
                   `}
                 >
-                  <IconComponent
+                  <Icon
                     className={`mr-3 h-5 w-5 flex-shrink-0 transition-colors duration-200 ${isActive ? 'text-cyan-400' : 'text-slate-500 group-hover:text-slate-300'}`}
-                    aria-hidden="true"
                   />
                   {item.name}
                 </Link>
@@ -202,13 +179,7 @@ export function Sidebar() {
             </div>
             {filteredNavigation.map(item => {
               const isActive = pathname === item.href;
-              // Robustly handle the icon component
-              const IconComponent =
-                typeof item.icon === 'object' && item.icon !== null
-                  ? Object.values(item.icon)[0]
-                  : item.icon;
-
-              if (!IconComponent) return null; // Prevent rendering if the icon is invalid
+              const Icon = item.icon;
 
               return (
                 <Link
@@ -223,11 +194,10 @@ export function Sidebar() {
                     }
                   `}
                 >
-                  <IconComponent
+                  <Icon
                     className={`mr-3 flex-shrink-0 h-5 w-5 transition-colors duration-200 ${
                       isActive ? 'text-cyan-400' : 'text-slate-500 group-hover:text-slate-300'
                     }`}
-                    aria-hidden="true"
                   />
                   {item.name}
                   {isActive && (
