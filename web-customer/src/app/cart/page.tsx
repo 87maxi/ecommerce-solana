@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useContract } from "@/hooks/useContract";
-import { useWallet } from "@/hooks/useWallet";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useEuroTokenBalance } from "@/hooks/useEuroTokenBalance";
 import {
   Trash2,
@@ -12,19 +13,17 @@ import {
   ArrowRight,
   Loader2,
   CreditCard,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CartItem {
   product: {
     id: number;
-    companyId: number;
     name: string;
-    description: string;
     price: string;
-    stock: number;
     image: string;
-    active: boolean;
+    companyId: number;
   };
   quantity: number;
 }
@@ -40,7 +39,7 @@ export default function CartPage() {
     updateQuantity,
     createInvoice,
   } = useContract();
-  const { isConnected, connect: connectWallet } = useWallet();
+  const { connected } = useWallet();
   const {
     balance,
     loading: balanceLoading,
@@ -48,33 +47,44 @@ export default function CartPage() {
   } = useEuroTokenBalance();
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchCart = async () => {
-      if (isConnected) {
+      if (connected) {
         try {
           const items = await getCart();
-          setCartItems(items);
+          if (isMounted) {
+            setCartItems(items);
 
-          // Calculate total locally or fetch it
-          const calculatedTotal = items.reduce(
-            (acc: number, item: CartItem) => {
-              return acc + parseFloat(item.product.price) * item.quantity;
-            },
-            0,
-          );
-          setTotal(calculatedTotal.toFixed(2));
+            // Calculate total locally
+            const calculatedTotal = items.reduce(
+              (acc: number, item: CartItem) => {
+                return acc + parseFloat(item.product.price) * item.quantity;
+              },
+              0,
+            );
+            setTotal(calculatedTotal.toFixed(2));
+          }
         } catch (error) {
           console.error("Error fetching cart:", error);
         }
       } else {
-        setCartItems([]);
+        if (isMounted) {
+          setCartItems([]);
+          setTotal("0.00");
+        }
       }
-      setLoading(false);
+      if (isMounted) setLoading(false);
     };
 
     fetchCart();
-  }, [getCart, isConnected]);
 
-  // Update total when cart items change
+    return () => {
+      isMounted = false;
+    };
+  }, [connected, getCart]);
+
+  // Update total when cart items change locally
   useEffect(() => {
     const calculatedTotal = cartItems.reduce((acc, item) => {
       return acc + parseFloat(item.product.price) * item.quantity;
@@ -122,9 +132,9 @@ export default function CartPage() {
     }
   };
 
-  const proceedToCheckout = async () => {
-    if (!isConnected) {
-      connectWallet();
+  const handleCheckout = async () => {
+    if (!connected) {
+      alert("Por favor conecta tu wallet primero");
       return;
     }
 
@@ -139,19 +149,18 @@ export default function CartPage() {
       }
 
       // For now, create invoice for the first company
-      const companyId = companyIds[0];
-      const invoiceId = await createInvoice(companyId);
+      // In a real app, you'd handle multiple companies or group them
+      const invoiceId = await createInvoice(companyIds[0]);
 
       if (invoiceId) {
-        // Redirect to EURT purchase page with invoice details
         const totalAmount = cartItems.reduce((acc, item) => {
           return acc + parseFloat(item.product.price) * item.quantity;
         }, 0);
 
         const compraUrl =
-          process.env.NEXT_PUBLIC_COMPRA_STABLECOIN_URL ||
+          process.env.NEXT_PUBLIC_COMPRAS_STABLEBOIN_URL ||
           "http://localhost:3033";
-        const redirectUrl = `${window.location.origin}/cart`;
+        const redirectUrl = `${window.location.origin}/cart/success`;
 
         const params = new URLSearchParams({
           amount: totalAmount.toString(),
@@ -173,6 +182,28 @@ export default function CartPage() {
     }
   };
 
+  if (!connected) {
+    return (
+      <div className="container mx-auto px-4 py-16">
+        <div className="max-w-md mx-auto text-center bg-card/50 backdrop-blur-sm border border-border/50 rounded-3xl p-8 shadow-xl shadow-black/5">
+          <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 text-primary">
+            <Wallet className="w-10 h-10" />
+          </div>
+          <h1 className="text-3xl font-bold mb-4 font-display text-foreground">
+            Conecta tu Wallet
+          </h1>
+          <p className="text-muted-foreground text-lg mb-8">
+            Necesitas conectar tu billetera de Solana para ver tu carrito y
+            realizar compras.
+          </p>
+          <div className="flex justify-center">
+            <WalletMultiButton className="!bg-primary hover:!bg-primary/90 !transition-all !rounded-xl" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -182,7 +213,6 @@ export default function CartPage() {
         <div className="animate-pulse space-y-4">
           <div className="h-32 bg-muted rounded-xl"></div>
           <div className="h-32 bg-muted rounded-xl"></div>
-          <div className="h-16 bg-muted rounded-lg w-1/3 ml-auto"></div>
         </div>
       </div>
     );
@@ -190,15 +220,15 @@ export default function CartPage() {
 
   if (cartItems.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-20 text-center">
+      <div className="container mx-auto px-4 py-16 text-center">
         <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
           <ShoppingBag className="w-10 h-10 text-muted-foreground" />
         </div>
         <h1 className="text-3xl font-bold mb-4 font-display text-foreground">
-          Your cart is empty
+          Tu carrito está vacío
         </h1>
         <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
-          Looks like you haven't added any items to your cart yet.
+          Parece que aún no has añadido ningún producto a tu carrito.
         </p>
         <a
           href="/products"
@@ -209,7 +239,7 @@ export default function CartPage() {
             "shadow-lg shadow-primary/25",
           )}
         >
-          Start Shopping
+          Explorar Productos
           <ArrowRight className="w-4 h-4" />
         </a>
       </div>
@@ -224,7 +254,7 @@ export default function CartPage() {
         </h1>
 
         {/* Display EURT balance when connected */}
-        {isConnected && (
+        {connected && (
           <div
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-full",
@@ -235,11 +265,16 @@ export default function CartPage() {
             {balanceLoading ? (
               <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
             ) : balanceError ? (
-              <span className="text-destructive">{balanceError}</span>
+              <span className="text-destructive text-xs">
+                Error cargando balance
+              </span>
             ) : (
               <>
-                <span className="text-muted-foreground">Balance:</span>
-                <span className="font-bold">{balance} EURT</span>
+                <span className="text-muted-foreground">Tu Balance:</span>
+                <span className="font-bold text-primary">{balance}</span>
+                <span className="text-muted-foreground font-semibold">
+                  EURT
+                </span>
               </>
             )}
           </div>
@@ -258,11 +293,18 @@ export default function CartPage() {
               )}
             >
               <div className="w-24 h-24 rounded-xl bg-secondary/20 overflow-hidden flex-shrink-0">
-                <img
-                  src={item.product.image}
-                  alt={item.product.name}
-                  className="w-full h-full object-cover"
-                />
+                {item.product.image &&
+                item.product.image !== "/placeholder-product.jpg" ? (
+                  <img
+                    src={item.product.image}
+                    alt={item.product.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                    <ShoppingBag className="w-8 h-8 opacity-50" />
+                  </div>
+                )}
               </div>
 
               <div className="flex-1 w-full sm:w-auto text-center sm:text-left">
@@ -304,8 +346,8 @@ export default function CartPage() {
                 </p>
                 <button
                   onClick={() => handleRemoveFromCart(item.product.id)}
-                  className="text-muted-foreground hover:text-destructive transition-colors p-2"
-                  title="Remove item"
+                  className="text-muted-foreground hover:text-destructive transition-colors p-2 rounded-lg hover:bg-destructive/10"
+                  title="Remove from cart"
                 >
                   <Trash2 className="w-5 h-5" />
                 </button>
@@ -317,17 +359,19 @@ export default function CartPage() {
         <div className="lg:col-span-1">
           <div className="bg-card/80 backdrop-blur-md p-6 rounded-3xl border border-border/50 sticky top-24 shadow-xl shadow-black/5">
             <h2 className="text-xl font-bold mb-6 text-foreground">
-              Order Summary
+              Resumen de Compra
             </h2>
 
             <div className="space-y-3 mb-6">
               <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal</span>
-                <span>{total} EURT</span>
+                <span className="font-medium text-foreground">
+                  {total} EURT
+                </span>
               </div>
               <div className="flex justify-between text-muted-foreground">
-                <span>Shipping</span>
-                <span className="text-green-500 font-medium">Free</span>
+                <span>Gastos de Red (Solana)</span>
+                <span className="text-emerald-500 font-medium">Gratis</span>
               </div>
             </div>
 
@@ -339,26 +383,28 @@ export default function CartPage() {
             </div>
 
             <button
-              onClick={proceedToCheckout}
+              onClick={handleCheckout}
+              disabled={cartItems.length === 0}
               className={cn(
                 "w-full flex items-center justify-center gap-2 py-4 rounded-xl",
                 "bg-primary text-primary-foreground font-bold text-lg",
                 "hover:bg-primary/90 transition-all duration-200 transform hover:scale-[1.02]",
                 "shadow-lg shadow-primary/25 hover:shadow-primary/40",
+                "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none",
               )}
             >
               <CreditCard className="w-5 h-5" />
-              Proceed to Checkout
+              Pagar con EURT
             </button>
 
             <div className="mt-4 p-3 bg-blue-900/20 rounded-lg border border-blue-500/30">
               <p className="text-xs text-center text-blue-300">
-                <span className="font-medium">Pago con EURT (EuroToken)</span>
+                <span className="font-medium">Pago Seguro en Solana</span>
                 <br />1 EURT = 1 Euro, stablecoin respaldado 1:1
               </p>
             </div>
             <p className="text-xs text-center text-muted-foreground mt-3">
-              Pagos seguros con tecnología blockchain
+              Serás redirigido a nuestra pasarela descentralizada.
             </p>
           </div>
         </div>

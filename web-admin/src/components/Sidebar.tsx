@@ -6,122 +6,247 @@ import { NAVIGATION } from '../lib/routes';
 import { WalletInfo } from './WalletInfo';
 import { ConnectWalletButton } from './ConnectWalletButton';
 import { useState } from 'react';
-import { useWallet } from '../hooks/useWallet';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { useRole } from '../contexts/RoleContext';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { isConnected } = useWallet();
+  const { connected } = useWallet();
   const { roleInfo } = useRole();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Show connect screen when not connected
-  if (!isConnected) {
+  if (!connected) {
     return (
       <div className="hidden md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 border-r border-cyan-500/20">
         <div className="flex flex-col flex-grow justify-center items-center p-8">
-          {/* Logo/Brand */}
-          <div className="mb-8 text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-cyan-500/50 ring-2 ring-cyan-400/30">
-              <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zM5.94 13.06a1.5 1.5 0 010-2.12l6-6a1.5 1.5 0 012.12 0l6 6a1.5 1.5 0 01-2.12 2.12L12 7.62l-4.94 4.94a1.5 1.5 0 01-2.12 0z" clipRule="evenodd" />
+          <div className="w-24 h-24 mb-8 relative">
+            <div className="absolute inset-0 bg-cyan-500 rounded-full blur-xl opacity-20 animate-pulse"></div>
+            <div className="w-full h-full bg-gradient-to-br from-cyan-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg shadow-cyan-500/30 ring-4 ring-slate-900">
+              <svg
+                className="w-12 h-12 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mb-2">Admin Panel</h2>
-            <p className="text-sm text-slate-400">E-Commerce Descentralizado</p>
           </div>
-
-          {/* Connect Button */}
-          <ConnectWalletButton />
-
-          <div className="mt-8 text-center">
-            <p className="text-xs text-slate-500 mb-2">
-              Conecta tu billetera para acceder
-            </p>
+          <h2 className="text-2xl font-bold text-white mb-2 text-center">Acceso Seguro</h2>
+          <p className="text-slate-400 text-center mb-10 text-sm">
+            Conecta tu wallet de Solana para acceder al panel de administración del E-Commerce.
+          </p>
+          <div className="w-full px-4">
+            <ConnectWalletButton />
+          </div>
+        </div>
+        <div className="p-4 border-t border-cyan-500/20 bg-slate-900/50 backdrop-blur-sm">
+          <div className="flex items-center justify-center space-x-2 text-xs text-slate-500">
+            <svg
+              className="w-4 h-4 text-emerald-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+              />
+            </svg>
+            <span>Conexión descentralizada segura</span>
           </div>
         </div>
       </div>
     );
   }
 
-  // Filter navigation items based on role
-  const filteredNavigation = NAVIGATION.filter(item =>
-    item.allowedRoles.includes(roleInfo.role)
-  );
+  // Filter navigation items based on user role
+  const filteredNavigation = NAVIGATION.filter(item => {
+    // If no roles specified, show to everyone (e.g., Dashboard)
+    if (!item.roles || item.roles.length === 0) return true;
+
+    // Admin sees everything
+    if (roleInfo.role === 'admin') return true;
+
+    // Unregistered users only see items with no specific roles or specifically 'unregistered'
+    if (
+      roleInfo.role === 'unregistered' ||
+      roleInfo.role === 'loading' ||
+      roleInfo.role === 'error'
+    ) {
+      return item.roles.includes('unregistered');
+    }
+
+    // Company owner checks
+    if (roleInfo.role === 'company_owner') {
+      // Allow if specifically required
+      return item.roles.includes('company_owner');
+    }
+
+    return false;
+  });
 
   return (
     <>
-      {/* Mobile menu button (only visible on mobile) */}
-      <button
-        className="md:hidden fixed top-4 left-4 z-20 p-2 rounded-lg bg-slate-800/90 backdrop-blur-sm border border-cyan-500/30 shadow-lg shadow-cyan-500/20"
-        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-      >
-        <svg
-          className="h-6 w-6 text-cyan-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M4 6h16M4 12h16M4 18h16"
-          />
-        </svg>
-      </button>
-
-      {/* Sidebar */}
-      <div
-        className={`fixed md:relative z-10 md:z-0 md:translate-x-0 transform transition-transform duration-300 ease-in-out
-          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-          w-72 flex-shrink-0 flex flex-col h-full border-r border-cyan-500/20 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 overflow-y-auto`}
-      >
-        <div className="flex items-center flex-shrink-0 px-4 py-5 border-b border-cyan-500/20">
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-cyan-500/30">
-              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zM5.94 13.06a1.5 1.5 0 010-2.12l6-6a1.5 1.5 0 012.12 0l6 6a1.5 1.5 0 01-2.12 2.12L12 7.62l-4.94 4.94a1.5 1.5 0 01-2.12 0z" clipRule="evenodd" />
+      {/* Mobile Sidebar */}
+      <div className={`md:hidden fixed inset-0 z-40 ${isMobileMenuOpen ? 'block' : 'hidden'}`}>
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+        <div className="fixed inset-y-0 left-0 w-64 bg-slate-900 border-r border-cyan-500/20 flex flex-col">
+          <div className="h-16 flex items-center justify-between px-4 border-b border-cyan-500/20 bg-slate-900/50">
+            <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+              Menú
+            </span>
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-slate-400 hover:text-white"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">Admin Panel</span>
-          </Link>
-        </div>
-        <div className="mt-5 flex-grow flex flex-col">
-          <nav className="flex-1 px-2 space-y-1">
-            {filteredNavigation.map((item) => {
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            {filteredNavigation.map(item => {
               const isActive = pathname === item.href;
+              // Robustly handle the icon component
+              const IconComponent =
+                typeof item.icon === 'object' && item.icon !== null
+                  ? Object.values(item.icon)[0]
+                  : item.icon;
+
+              if (!IconComponent) return null; // Prevent rendering if the icon is invalid
+
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`${isActive
-                    ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-300 border border-cyan-500/30 shadow-lg shadow-cyan-500/10'
-                    : 'text-slate-300 hover:bg-slate-700/50 hover:text-cyan-400 border border-transparent'
-                    } group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200`}
                   onClick={() => setIsMobileMenuOpen(false)}
+                  className={`
+                    group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200
+                    ${
+                      isActive
+                        ? 'bg-gradient-to-r from-cyan-500/10 to-purple-500/10 text-cyan-400 border border-cyan-500/20 shadow-inner'
+                        : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+                    }
+                  `}
                 >
-                  <div className={`mr-3 flex-shrink-0 h-5 w-5 ${isActive ? 'text-cyan-400' : 'text-slate-400 group-hover:text-cyan-400'} transition-colors`}>
-                    {item.icon}
-                  </div>
+                  <IconComponent
+                    className={`mr-3 h-5 w-5 flex-shrink-0 transition-colors duration-200 ${isActive ? 'text-cyan-400' : 'text-slate-500 group-hover:text-slate-300'}`}
+                    aria-hidden="true"
+                  />
                   {item.name}
                 </Link>
               );
             })}
-          </nav>
-        </div>
-        <div className="p-4 border-t border-cyan-500/20">
-          <WalletInfo />
+          </div>
+          <div className="p-4 border-t border-cyan-500/20 bg-slate-900/50">
+            <WalletInfo />
+          </div>
         </div>
       </div>
 
-      {/* Overlay for mobile */}
-      {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 z-0 bg-black bg-opacity-50 md:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
-        ></div>
-      )}
+      {/* Desktop Sidebar */}
+      <div className="hidden md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 bg-slate-900 border-r border-cyan-500/20 z-20 transition-all duration-300">
+        <div className="flex flex-col flex-grow pt-5 bg-slate-900 overflow-y-auto">
+          <div className="flex items-center flex-shrink-0 px-6 mb-8">
+            <Link href="/" className="flex items-center space-x-3 group">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-all duration-300 transform group-hover:scale-105">
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent group-hover:from-cyan-400 group-hover:to-purple-400 transition-all duration-300">
+                  E-Commerce
+                </h1>
+                <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">
+                  Admin Portal
+                </p>
+              </div>
+            </Link>
+          </div>
+
+          <div className="px-4 mb-6">
+            <WalletInfo />
+          </div>
+
+          <div className="mt-4 flex-grow flex flex-col px-3 space-y-1.5">
+            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-3">
+              Navegación
+            </div>
+            {filteredNavigation.map(item => {
+              const isActive = pathname === item.href;
+              // Robustly handle the icon component
+              const IconComponent =
+                typeof item.icon === 'object' && item.icon !== null
+                  ? Object.values(item.icon)[0]
+                  : item.icon;
+
+              if (!IconComponent) return null; // Prevent rendering if the icon is invalid
+
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`
+                    group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
+                    ${
+                      isActive
+                        ? 'bg-gradient-to-r from-cyan-500/10 to-purple-500/10 text-cyan-400 border border-cyan-500/20 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]'
+                        : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
+                    }
+                  `}
+                >
+                  <IconComponent
+                    className={`mr-3 flex-shrink-0 h-5 w-5 transition-colors duration-200 ${
+                      isActive ? 'text-cyan-400' : 'text-slate-500 group-hover:text-slate-300'
+                    }`}
+                    aria-hidden="true"
+                  />
+                  {item.name}
+                  {isActive && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]"></div>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Footer info */}
+        <div className="p-4 border-t border-slate-800 bg-slate-900/50">
+          <div className="flex items-center justify-center space-x-2 text-xs text-slate-500">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
+            <span>Sistema Operativo</span>
+          </div>
+        </div>
+      </div>
     </>
   );
 }

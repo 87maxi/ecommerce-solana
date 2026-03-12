@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 import { useSimpleContract } from "./useSimpleContract";
-import { useWallet } from "./useWallet";
 
 export type UserRole =
   | "admin"
@@ -21,7 +21,8 @@ export type UserRoleInfo = {
 };
 
 export function useUserRole(): UserRoleInfo {
-  const { address } = useWallet();
+  const { publicKey, connected } = useWallet();
+  const address = publicKey?.toBase58();
   const { contract: program } = useSimpleContract();
 
   const [roleInfo, setRoleInfo] = useState<UserRoleInfo>({ role: "loading" });
@@ -29,9 +30,9 @@ export function useUserRole(): UserRoleInfo {
   useEffect(() => {
     let isMounted = true;
 
-    if (!address || !program) {
+    if (!connected || !address || !program) {
       if (isMounted) {
-        if (!address) {
+        if (!connected || !address) {
           setRoleInfo({ role: "loading" });
         } else {
           setRoleInfo({ role: "error", error: "Programa no disponible" });
@@ -77,7 +78,7 @@ export function useUserRole(): UserRoleInfo {
     return () => {
       isMounted = false;
     };
-  }, [address, program]);
+  }, [address, program, connected, publicKey]);
 
   return roleInfo;
 }

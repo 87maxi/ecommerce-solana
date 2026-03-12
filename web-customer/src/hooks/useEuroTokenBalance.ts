@@ -3,21 +3,22 @@
 import { useState, useEffect } from "react";
 import { PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
-import { useWallet } from "./useWallet";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 
 export function useEuroTokenBalance() {
   const [balance, setBalance] = useState<string>("0");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // provider acts as the Solana Connection, address is the connected wallet public key string
-  const { provider, address } = useWallet();
+  const { connection } = useConnection();
+  const { publicKey } = useWallet();
+  const address = publicKey?.toBase58();
 
   useEffect(() => {
     let isMounted = true;
 
     const fetchBalance = async () => {
-      if (!provider || !address) {
+      if (!connection || !address || !publicKey) {
         if (isMounted) {
           setBalance("0");
           setLoading(false);
@@ -38,14 +39,13 @@ export function useEuroTokenBalance() {
         }
 
         const mint = new PublicKey(mintAddressStr);
-        const userPubKey = new PublicKey(address);
 
         // Derive the Associated Token Account (ATA)
-        const ata = await getAssociatedTokenAddress(mint, userPubKey);
+        const ata = await getAssociatedTokenAddress(mint, publicKey);
 
         try {
           // Fetch the SPL Token balance
-          const balanceInfo = await provider.getTokenAccountBalance(ata);
+          const balanceInfo = await connection.getTokenAccountBalance(ata);
           if (isMounted) {
             setBalance(balanceInfo.value.uiAmountString || "0");
           }
@@ -77,7 +77,7 @@ export function useEuroTokenBalance() {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [provider, address]);
+  }, [connection, address, publicKey]);
 
   return { balance, loading, error };
 }

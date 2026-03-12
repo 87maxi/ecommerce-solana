@@ -1,0 +1,17 @@
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /home/maxi/package-lock.json as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * /home/maxi/Documentos/source/codecrypto/practice/ecommerce/stablecoin/compra-stableboin/package-lock.json
+
+   ▲ Next.js 15.5.6
+   - Local:        http://localhost:3032
+   - Network:      http://192.168.0.146:3032
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 1357ms
+ ○ Compiling / ...
+ ✓ Compiled / in 1037ms (877 modules)
+ GET / 200 in 1381ms

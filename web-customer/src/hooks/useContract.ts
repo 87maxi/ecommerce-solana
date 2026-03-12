@@ -3,14 +3,21 @@
 import { useState, useEffect, useRef } from "react";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { Program, AnchorProvider, Idl } from "@coral-xyz/anchor";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import EcommerceABI from "@/contracts/abis/EcommerceABI.json";
-import { useWallet } from "./useWallet";
 
 // Dirección del programa en Solana (debería venir de variables de entorno)
 const PROGRAM_ID = process.env.NEXT_PUBLIC_ECOMMERCE_CONTRACT_ADDRESS || "";
 
 export function useContract() {
-  const { provider: connection, address: walletAddress, signer } = useWallet();
+  const { connection } = useConnection();
+  const { publicKey } = useWallet();
+  const walletAddress = publicKey?.toBase58();
+
+  // We mock a signer object for Anchor Provider to keep compatibility
+  // with the read-only operations when the user might not be fully connected
+  const signer = publicKey ? { publicKey } : null;
+
   const [program, setProgram] = useState<Program | null>(null);
   const [account, setAccount] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -19,6 +26,8 @@ export function useContract() {
 
   // Inicializar el programa cuando haya una conexión disponible
   useEffect(() => {
+    let isMounted = true;
+
     if (
       isInitialized ||
       !connection ||
@@ -42,7 +51,7 @@ export function useContract() {
           AnchorProvider.defaultOptions(),
         );
 
-        setAccount(walletAddress);
+        if (isMounted) setAccount(walletAddress);
 
         if (!PROGRAM_ID) {
           console.warn("Program ID not provided in env.");
@@ -53,15 +62,21 @@ export function useContract() {
         const idl = { ...(EcommerceABI as any), address: PROGRAM_ID } as Idl;
         const ecommerceProgram = new Program(idl, anchorProvider);
 
-        setProgram(ecommerceProgram);
-        setIsInitialized(true);
+        if (isMounted) {
+          setProgram(ecommerceProgram);
+          setIsInitialized(true);
+        }
       } catch (error) {
         console.error("[useContract] Error initializing program:", error);
-        setIsInitialized(false);
+        if (isMounted) setIsInitialized(false);
       }
     };
 
     initProgram();
+
+    return () => {
+      isMounted = false;
+    };
   }, [connection, walletAddress, signer, isInitialized]);
 
   // Resetear el intento de inicialización si cambia la billetera
@@ -224,6 +239,9 @@ export function useContract() {
           isRegistered: true,
           customerAddress: account,
         }),
+        owner: async () => {
+          return account;
+        },
       }
     : null;
 

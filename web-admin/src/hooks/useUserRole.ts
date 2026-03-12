@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useContract } from './useContract';
-import { useWallet } from './useWallet';
 
 export type UserRole =
   | 'admin'
@@ -21,75 +20,70 @@ export type UserRoleInfo = {
 };
 
 export function useUserRole(): UserRoleInfo {
-  const { address, chainId, provider, signer } = useWallet();
-  const ecommerceContract = useContract('Ecommerce', provider, signer, chainId);
+  const { publicKey } = useWallet();
+  const { connection } = useConnection();
+  // Pass null for chainId as it's not used in the Solana refactor
+  const ecommerceContract = useContract('Ecommerce', connection, { publicKey }, null);
 
   const [roleInfo, setRoleInfo] = useState<UserRoleInfo>({ role: 'loading' });
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // If no address, show loading
-    if (!address) {
-      setRoleInfo({ role: 'loading' });
-      setLoading(false);
-      return;
-    }
+    let isMounted = true;
+    const address = publicKey?.toBase58();
 
-    // If address exists but contract not ready, keep loading
-    if (!ecommerceContract) {
-      setRoleInfo({ role: 'loading' });
-      setLoading(true);
+    if (!address || !ecommerceContract) {
+      if (isMounted) {
+        if (!address) {
+          setRoleInfo({ role: 'loading' });
+        } else {
+          setRoleInfo({ role: 'error', error: 'Contrato no disponible' });
+        }
+      }
       return;
     }
 
     const determineRole = async () => {
       try {
-        setLoading(true);
+        if (isMounted) setRoleInfo({ role: 'loading' });
 
         // First, check if the user is the contract owner (admin)
+        // In our mock, owner() returns the connected address so it will be admin
         const contractOwner = await ecommerceContract.owner();
         if (contractOwner.toLowerCase() === address.toLowerCase()) {
-          setRoleInfo({ role: 'admin' });
-          setLoading(false);
+          if (isMounted) setRoleInfo({ role: 'admin' });
           return;
         }
 
         // Check if the user is registered as a customer
-        const isCustomerRegistered =
-          await ecommerceContract.isCustomerRegistered(address);
+        const isCustomerRegistered = await ecommerceContract.isCustomerRegistered(address);
         if (isCustomerRegistered) {
-          // Try to get customer info
           try {
             const customerInfo = await ecommerceContract.getCustomer(address);
             if (customerInfo && customerInfo.isRegistered) {
-              setRoleInfo({ role: 'customer' });
-              setLoading(false);
+              if (isMounted) setRoleInfo({ role: 'customer' });
               return;
             }
           } catch (err) {
-            // If we can't get customer info, still consider them a customer
-            setRoleInfo({ role: 'customer' });
-            setLoading(false);
+            if (isMounted) setRoleInfo({ role: 'customer' });
             return;
           }
         }
 
         // Check if the user owns any companies
         try {
-          // Get all companies
           const companyIds = await ecommerceContract.getAllCompanies();
 
-          // Check each company to see if the user is the owner
           for (const companyId of companyIds) {
             try {
               const company = await ecommerceContract.getCompany(companyId);
               if (company.owner.toLowerCase() === address.toLowerCase()) {
-                setRoleInfo({
-                  role: 'company_owner',
-                  companyId: companyId.toString(),
-                  companyName: company.name,
-                });
-                setLoading(false);
+                if (isMounted) {
+                  setRoleInfo({
+                    role: 'company_owner',
+                    companyId: companyId.toString(),
+                    companyName: company.name,
+                  });
+                }
                 return;
               }
             } catch (err) {
@@ -102,23 +96,24 @@ export function useUserRole(): UserRoleInfo {
         }
 
         // If we get here, the user is not registered in any specific role
-        setRoleInfo({ role: 'unregistered' });
+        if (isMounted) setRoleInfo({ role: 'unregistered' });
       } catch (err) {
         console.error('Error determining user role:', err);
-        setRoleInfo({
-          role: 'error',
-          error:
-            err instanceof Error
-              ? err.message
-              : 'Error desconocido al determinar rol',
-        });
-      } finally {
-        setLoading(false);
+        if (isMounted) {
+          setRoleInfo({
+            role: 'error',
+            error: err instanceof Error ? err.message : 'Error desconocido al determinar rol',
+          });
+        }
       }
     };
 
     determineRole();
-  }, [address, ecommerceContract]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [publicKey, ecommerceContract]);
 
   return roleInfo;
 }

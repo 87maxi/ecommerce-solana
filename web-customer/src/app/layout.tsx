@@ -8,30 +8,36 @@ import { useEffect, useState } from "react";
 import { ShoppingCart, Package, CreditCard, Store } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EuroTokenBalance } from "@/components/EuroTokenBalance";
-import { WalletProvider } from "@/hooks/useWallet";
+import { AppWalletProvider } from "@/components/AppWalletProvider";
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   const [cartItemCount, setCartItemCount] = useState(0);
   const { getCartItemCount, contract } = useContract();
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchCartCount = async () => {
       // Only fetch cart count if contract is initialized (wallet connected)
       if (!contract) {
-        setCartItemCount(0);
+        if (isMounted) setCartItemCount(0);
         return;
       }
 
       try {
         const count = await getCartItemCount();
-        setCartItemCount(count);
+        if (isMounted) setCartItemCount(count);
       } catch (error) {
         console.error("Error fetching cart count:", error);
-        setCartItemCount(0);
+        if (isMounted) setCartItemCount(0);
       }
     };
 
     fetchCartCount();
+
+    return () => {
+      isMounted = false;
+    };
   }, [getCartItemCount, contract]);
 
   return (
@@ -98,7 +104,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                 <EuroTokenBalance />
               </div>
               <a
-                href="http://localhost:3033?redirect=http://localhost:3030"
+                href={`${process.env.NEXT_PUBLIC_COMPRAS_STABLEBOIN_URL || "http://localhost:3033"}?redirect=${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3030"}`}
                 className={cn(
                   "hidden md:flex items-center gap-2",
                   "bg-indigo-600/10 text-indigo-400 border border-indigo-600/20",
@@ -215,9 +221,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="bg-background min-h-screen flex flex-col font-body antialiased selection:bg-primary/20 selection:text-primary">
-        <WalletProvider>
+        <AppWalletProvider>
           <MainLayout>{children}</MainLayout>
-        </WalletProvider>
+        </AppWalletProvider>
       </body>
     </html>
   );

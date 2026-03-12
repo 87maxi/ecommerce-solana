@@ -1,0 +1,157 @@
+[2026-03-12--11-46-06 INFO actix_server::builder] starting 5 workers
+[2026-03-12--11-46-06 INFO actix_server::server] Tokio runtime found; starting in existing Tokio runtime
+[2026-03-12--11-46-06 INFO actix_server::server] starting service: "actix-web-service-127.0.0.1:18488", workers: 5, listening on: 127.0.0.1:18488
+[2026-03-12--11-46-06 DEBUG reqwest::connect] starting new connection: https://api.mainnet-beta.solana.com/
+[2026-03-12--11-46-06 DEBUG hyper_util::client::legacy::connect::http] connecting to 216.245.220.118:443
+[2026-03-12--11-46-06 DEBUG hyper_util::client::legacy::connect::http] connected to 216.245.220.118:443
+[2026-03-12--11-46-07 DEBUG hyper_util::client::legacy::pool] pooling idle connection for ("https", api.mainnet-beta.solana.com)
+[2026-03-12--11-46-07 DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 invoke [1]
+[2026-03-12--11-46-07 DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 success
+[2026-03-12--11-46-07 DEBUG reqwest::connect] starting new connection: https://cloud.txtx.run/
+[2026-03-12--11-46-07 DEBUG hyper::client::connect::dns] resolving host="cloud.txtx.run"
+[2026-03-12--11-46-07 INFO parity_ws] Listening for new connections on 127.0.0.1:8900.
+[2026-03-12--11-46-07 DEBUG jsonrpc_ws_server::server] Bound to local address: 127.0.0.1:8900
+[2026-03-12--11-46-07 DEBUG hyper::client::connect::http] connecting to 76.76.21.98:443
+[2026-03-12--11-46-07 DEBUG hyper::client::connect::http] connected to 76.76.21.98:443
+[2026-03-12--11-46-07 DEBUG rustls::client::hs] No cached session for DnsName("cloud.txtx.run")
+[2026-03-12--11-46-07 DEBUG rustls::client::hs] Not resuming any session
+[2026-03-12--11-46-07 DEBUG rustls::client::hs] Using ciphersuite TLS13_AES_128_GCM_SHA256
+[2026-03-12--11-46-07 DEBUG rustls::client::tls13] Not resuming
+[2026-03-12--11-46-07 DEBUG rustls::client::tls13] TLS1.3 encrypted extensions: [Protocols([ProtocolName(6832)]), ServerNameAck]
+[2026-03-12--11-46-07 DEBUG rustls::client::hs] ALPN protocol is Some(b"h2")
+[2026-03-12--11-46-07 DEBUG h2::client] binding client connection
+[2026-03-12--11-46-07 DEBUG h2::client] client connection bound
+[2026-03-12--11-46-07 DEBUG h2::codec::framed_write] send frame=Settings { flags: (0x0), enable_push: 0, initial_window_size: 2097152, max_frame_size: 16384 }
+[2026-03-12--11-46-07 DEBUG h2::proto::connection] Connection; peer=Client
+[2026-03-12--11-46-07 DEBUG h2::codec::framed_write] send frame=WindowUpdate { stream_id: StreamId(0), size_increment: 5177345 }
+[2026-03-12--11-46-07 DEBUG hyper::client::pool] pooling idle connection for ("https", cloud.txtx.run)
+[2026-03-12--11-46-07 DEBUG h2::codec::framed_write] send frame=Headers { stream_id: StreamId(1), flags: (0x5: END_HEADERS | END_STREAM) }
+[2026-03-12--11-46-07 DEBUG h2::codec::framed_read] received frame=Settings { flags: (0x0), header_table_size: 4096, max_concurrent_streams: 250, initial_window_size: 1048576, max_frame_size: 1048576, max_header_list_size: 2097472 }
+[2026-03-12--11-46-07 DEBUG h2::codec::framed_write] send frame=Settings { flags: (0x1: ACK) }
+[2026-03-12--11-46-07 DEBUG h2::codec::framed_read] received frame=Settings { flags: (0x1: ACK) }
+[2026-03-12--11-46-07 DEBUG h2::proto::settings] received settings ACK; applying Settings { flags: (0x0), enable_push: 0, initial_window_size: 2097152, max_frame_size: 16384 }
+[2026-03-12--11-46-07 DEBUG h2::codec::framed_read] received frame=WindowUpdate { stream_id: StreamId(0), size_increment: 983041 }
+[2026-03-12--11-46-07 DEBUG h2::codec::framed_read] received frame=Headers { stream_id: StreamId(1), flags: (0x4: END_HEADERS) }
+[2026-03-12--11-46-07 DEBUG h2::codec::framed_read] received frame=Data { stream_id: StreamId(1) }
+[2026-03-12--11-46-07 DEBUG h2::codec::framed_read] received frame=Data { stream_id: StreamId(1), flags: (0x1: END_STREAM) }
+[2026-03-12--11-46-07 DEBUG h2::codec::framed_write] send frame=GoAway { error_code: NO_ERROR, last_stream_id: StreamId(0) }
+[2026-03-12--11-46-07 DEBUG h2::proto::connection] Connection::poll; connection error error=GoAway(b"", NO_ERROR, Library)
+[2026-03-12--11-46-07 DEBUG rustls::common_state] Sending warning alert CloseNotify
+[2026-03-12--11-46-07 INFO surfpool::cli::simnet] Datasource connection successful. Epoch 939 / Slot index 288254 / Slot 405936254.
+[2026-03-12--11-46-07 INFO surfpool::cli::simnet] Account 7eCTmt5LYSqnjgw8jebHjUzf8X7omxEpxYHbsXsmPtZQ updated.
+[2026-03-12--11-46-07 INFO surfpool::cli::simnet] Genesis airdrop successful 7eCTmt5LYSqnjgw8jebHjUzf8X7omxEpxYHbsXsmPtZQ: 10000000000000
+[2026-03-12--11-46-07 INFO surfpool::cli::simnet] Transaction processed 4DBQZ7wfb5YWdYbrXrYJAMkPC8S28QeRBJUJBJx5LRWdWkZjshBEbRWnuN7uDpzJb3HxnehmNJKVhAMWbiiu7wV3
+[2026-03-12--11-46-07 INFO surfpool::cli::simnet] Program 11111111111111111111111111111111 invoke [1]
+[2026-03-12--11-46-07 INFO surfpool::cli::simnet] Program 11111111111111111111111111111111 success
+[2026-03-12--12-43-40 DEBUG surfpool_core::surfnet::svm] Clearing liteSVM cache at slot 405945000
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::io] parsed 6 headers
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::conn] incoming body is content-length (131 bytes)
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::conn] incoming body completed
+[2026-03-12--13-05-53 DEBUG surfpool_core::rpc] Processing request 'getBalance'
+[2026-03-12--13-05-53 DEBUG rpc] Response: {"jsonrpc":"2.0","result":{"context":{"slot":405948375,"apiVersion":"3.1.6"},"value":10000000000000},"id":0}.
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::io] flushed 233 bytes
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::io] parsed 6 headers
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::conn] incoming body is content-length (92 bytes)
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::conn] incoming body completed
+[2026-03-12--13-05-53 DEBUG surfpool_core::rpc] Processing request 'getLatestBlockhash'
+[2026-03-12--13-05-53 DEBUG rpc] Response: {"jsonrpc":"2.0","result":{"context":{"slot":405948375,"apiVersion":"3.1.6"},"value":{"blockhash":"SURFNETxSAFEHASHxxxxxxxxxxxxxxxxxxxxxxx2f5a","lastValidBlockHeight":12273}},"id":1}.
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::io] flushed 307 bytes
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::io] parsed 6 headers
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::conn] incoming body is content-length (211 bytes)
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::conn] incoming body completed
+[2026-03-12--13-05-53 DEBUG surfpool_core::rpc] Processing request 'requestAirdrop'
+[2026-03-12--13-05-53 DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 invoke [1]
+[2026-03-12--13-05-53 DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 success
+[2026-03-12--13-05-53 DEBUG rpc] Response: {"jsonrpc":"2.0","result":"61opMYVhk4GhfaqBJxFSE9U27Kia8U8qFax9dTeYpUodgtZGGmhnPi3xhJVprtdjyzZYUsRZsP1y2BAMJZih678p","id":2}.
+[2026-03-12--13-05-53 INFO surfpool::cli::simnet] Account 7eCTmt5LYSqnjgw8jebHjUzf8X7omxEpxYHbsXsmPtZQ updated.
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::io] flushed 249 bytes
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::io] parsed 6 headers
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::conn] incoming body is content-length (160 bytes)
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::conn] incoming body completed
+[2026-03-12--13-05-53 DEBUG surfpool_core::rpc] Processing request 'getSignatureStatuses'
+[2026-03-12--13-05-53 DEBUG rpc] Response: {"jsonrpc":"2.0","result":{"context":{"slot":405948375,"apiVersion":"3.1.6"},"value":[null]},"id":3}.
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::io] flushed 225 bytes
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::io] parsed 6 headers
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::conn] incoming body is content-length (136 bytes)
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::conn] incoming body completed
+[2026-03-12--13-05-53 DEBUG surfpool_core::rpc] Processing request 'isBlockhashValid'
+[2026-03-12--13-05-53 DEBUG rpc] Response: {"jsonrpc":"2.0","result":{"context":{"slot":405948375,"apiVersion":"3.1.6"},"value":true},"id":4}.
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::io] flushed 222 bytes
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::io] parsed 6 headers
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::conn] incoming body is content-length (160 bytes)
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::conn] incoming body completed
+[2026-03-12--13-05-53 DEBUG surfpool_core::rpc] Processing request 'getSignatureStatuses'
+[2026-03-12--13-05-53 DEBUG rpc] Response: {"jsonrpc":"2.0","result":{"context":{"slot":405948377,"apiVersion":"3.1.6"},"value":[{"slot":405948375,"confirmations":2,"status":{"Ok":null},"err":null,"confirmationStatus":"confirmed"}]},"id":5}.
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::io] flushed 322 bytes
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::io] parsed 6 headers
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::conn] incoming body is content-length (160 bytes)
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::conn] incoming body completed
+[2026-03-12--13-05-53 DEBUG surfpool_core::rpc] Processing request 'getSignatureStatuses'
+[2026-03-12--13-05-53 DEBUG rpc] Response: {"jsonrpc":"2.0","result":{"context":{"slot":405948377,"apiVersion":"3.1.6"},"value":[{"slot":405948375,"confirmations":2,"status":{"Ok":null},"err":null,"confirmationStatus":"confirmed"}]},"id":6}.
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::io] flushed 322 bytes
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::io] parsed 6 headers
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::conn] incoming body is content-length (131 bytes)
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::conn] incoming body completed
+[2026-03-12--13-05-53 DEBUG surfpool_core::rpc] Processing request 'getBalance'
+[2026-03-12--13-05-53 DEBUG rpc] Response: {"jsonrpc":"2.0","result":{"context":{"slot":405948377,"apiVersion":"3.1.6"},"value":10010000000000},"id":7}.
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::io] flushed 233 bytes
+[2026-03-12--13-05-53 DEBUG hyper::proto::h1::conn] read eof
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::io] parsed 6 headers
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::conn] incoming body is content-length (131 bytes)
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::conn] incoming body completed
+[2026-03-12--13-13-01 DEBUG surfpool_core::rpc] Processing request 'getBalance'
+[2026-03-12--13-13-01 DEBUG rpc] Response: {"jsonrpc":"2.0","result":{"context":{"slot":405949459,"apiVersion":"3.1.6"},"value":10010000000000},"id":0}.
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::io] flushed 233 bytes
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::io] parsed 6 headers
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::conn] incoming body is content-length (92 bytes)
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::conn] incoming body completed
+[2026-03-12--13-13-01 DEBUG surfpool_core::rpc] Processing request 'getLatestBlockhash'
+[2026-03-12--13-13-01 DEBUG rpc] Response: {"jsonrpc":"2.0","result":{"context":{"slot":405949459,"apiVersion":"3.1.6"},"value":{"blockhash":"SURFNETxSAFEHASHxxxxxxxxxxxxxxxxxxxxxxx3396","lastValidBlockHeight":13357}},"id":1}.
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::io] flushed 307 bytes
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::io] parsed 6 headers
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::conn] incoming body is content-length (211 bytes)
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::conn] incoming body completed
+[2026-03-12--13-13-01 DEBUG surfpool_core::rpc] Processing request 'requestAirdrop'
+[2026-03-12--13-13-01 DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 invoke [1]
+[2026-03-12--13-13-01 DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 success
+[2026-03-12--13-13-01 DEBUG rpc] Response: {"jsonrpc":"2.0","result":"2X2co5S82oUU1PteiJmSv974wzrogo5LyHKAZ3zxYXL1gBFKSDp2tEMWyg2Y7qChcsFrRyfJTEXoEVH6US813fQ9","id":2}.
+[2026-03-12--13-13-01 INFO surfpool::cli::simnet] Account 7eCTmt5LYSqnjgw8jebHjUzf8X7omxEpxYHbsXsmPtZQ updated.
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::io] flushed 249 bytes
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::io] parsed 6 headers
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::conn] incoming body is content-length (160 bytes)
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::conn] incoming body completed
+[2026-03-12--13-13-01 DEBUG surfpool_core::rpc] Processing request 'getSignatureStatuses'
+[2026-03-12--13-13-01 DEBUG rpc] Response: {"jsonrpc":"2.0","result":{"context":{"slot":405949459,"apiVersion":"3.1.6"},"value":[null]},"id":3}.
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::io] flushed 225 bytes
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::io] parsed 6 headers
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::conn] incoming body is content-length (136 bytes)
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::conn] incoming body completed
+[2026-03-12--13-13-01 DEBUG surfpool_core::rpc] Processing request 'isBlockhashValid'
+[2026-03-12--13-13-01 DEBUG rpc] Response: {"jsonrpc":"2.0","result":{"context":{"slot":405949459,"apiVersion":"3.1.6"},"value":true},"id":4}.
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::io] flushed 222 bytes
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::io] parsed 6 headers
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::conn] incoming body is content-length (160 bytes)
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::conn] incoming body completed
+[2026-03-12--13-13-01 DEBUG surfpool_core::rpc] Processing request 'getSignatureStatuses'
+[2026-03-12--13-13-01 DEBUG rpc] Response: {"jsonrpc":"2.0","result":{"context":{"slot":405949460,"apiVersion":"3.1.6"},"value":[{"slot":405949459,"confirmations":1,"status":{"Ok":null},"err":null,"confirmationStatus":"confirmed"}]},"id":5}.
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::io] flushed 322 bytes
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::io] parsed 6 headers
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::conn] incoming body is content-length (160 bytes)
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::conn] incoming body completed
+[2026-03-12--13-13-01 DEBUG surfpool_core::rpc] Processing request 'getSignatureStatuses'
+[2026-03-12--13-13-01 DEBUG rpc] Response: {"jsonrpc":"2.0","result":{"context":{"slot":405949460,"apiVersion":"3.1.6"},"value":[{"slot":405949459,"confirmations":1,"status":{"Ok":null},"err":null,"confirmationStatus":"confirmed"}]},"id":6}.
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::io] flushed 322 bytes
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::io] parsed 6 headers
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::conn] incoming body is content-length (131 bytes)
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::conn] incoming body completed
+[2026-03-12--13-13-01 DEBUG surfpool_core::rpc] Processing request 'getBalance'
+[2026-03-12--13-13-01 DEBUG rpc] Response: {"jsonrpc":"2.0","result":{"context":{"slot":405949460,"apiVersion":"3.1.6"},"value":10020000000000},"id":7}.
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::io] flushed 233 bytes
+[2026-03-12--13-13-01 DEBUG hyper::proto::h1::conn] read eof
+[2026-03-12--13-13-09 INFO actix_server::worker] shutting down idle worker
+[2026-03-12--13-13-09 INFO actix_server::worker] shutting down idle worker
+[2026-03-12--13-13-09 INFO actix_server::worker] shutting down idle worker
+[2026-03-12--13-13-09 INFO actix_server::worker] shutting down idle worker
+[2026-03-12--13-13-09 INFO actix_server::worker] shutting down idle worker
+[2026-03-12--13-13-09 DEBUG actix_server::accept] paused accepting connections on 127.0.0.1:18488
+[2026-03-12--13-13-09 INFO actix_server::accept] accept thread stopped

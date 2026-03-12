@@ -3,31 +3,34 @@
 import { useState, useEffect } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { getAssociatedTokenAddress } from '@solana/spl-token';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 
-import { useWallet } from '../hooks/useWallet';
 import { useRole } from '../contexts/RoleContext';
 import { formatAddress } from '../lib/utils';
 import { getContractAddress } from '../lib/contracts/addresses';
 
 export function WalletInfo() {
-  const { disconnect, isConnected, address, chainId, provider } = useWallet();
+  const { disconnect, connected, publicKey } = useWallet();
+  const { connection } = useConnection();
 
   const { roleInfo } = useRole();
   const [balance, setBalance] = useState<string>('0');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
+  const address = publicKey?.toBase58();
+
   useEffect(() => {
     let isMounted = true;
 
     const fetchBalance = async () => {
-      if (!address || !provider) {
+      if (!address || !connection) {
         if (isMounted) setBalance('0');
         return;
       }
 
       try {
-        const mintAddressStr = getContractAddress(chainId || 1337, 'EuroToken');
+        const mintAddressStr = getContractAddress(1337, 'EuroToken');
 
         if (!mintAddressStr) {
           throw new Error('No se encontró la dirección del EuroToken');
@@ -39,7 +42,7 @@ export function WalletInfo() {
         const ata = await getAssociatedTokenAddress(mint, userPubKey);
 
         try {
-          const balanceInfo = await provider.getTokenAccountBalance(ata);
+          const balanceInfo = await connection.getTokenAccountBalance(ata);
           if (isMounted) {
             setBalance(balanceInfo.value.uiAmountString || '0');
           }
@@ -63,7 +66,7 @@ export function WalletInfo() {
       isMounted = false;
       clearInterval(intervalId);
     };
-  }, [address, chainId, provider]);
+  }, [address, connection]);
 
   const handleCopyAddress = () => {
     if (address) {
@@ -73,7 +76,7 @@ export function WalletInfo() {
     }
   };
 
-  if (!isConnected || !address) return null;
+  if (!connected || !address) return null;
 
   return (
     <div className="relative">
