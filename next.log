@@ -1,0 +1,8 @@
+   ▲ Next.js 16.0.3 (Turbopack)
+   - Local:         http://localhost:3032
+   - Network:       http://192.168.0.146:3032
+
+ ✓ Starting...
+Error: > Couldn't find any `pages` or `app` directory. Please create one under the project root
+    at ignore-listed frames
+[?25h

@@ -1,0 +1,72 @@
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/syne/400.css';
+@import '@fontsource/syne/600.css';
+@import '@fontsource/syne/700.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240, 5%, 6%;
+    --foreground: 0, 0%, 98%;
+    --card: 240, 5%, 10%;
+    --card-foreground: 0, 0%, 98%;
+    --popover: 240, 5%, 10%;
+    --popover-foreground: 0, 0%, 98%;
+    --primary: 210, 100%, 50%;
+    --primary-foreground: 0, 0%, 100%;
+    --secondary: 240, 5%, 15%;
+    --secondary-foreground: 0, 0%, 98%;
+    --muted: 240, 5%, 12%;
+    --muted-foreground: 240, 5%, 65%;
+    --accent: 280, 80%, 60%;
+    --accent-foreground: 0, 0%, 100%;
+    --destructive: 0, 84%, 60%;
+    --destructive-foreground: 0, 0%, 100%;
+    --border: 240, 5%, 20%;
+    --input: 240, 5%, 15%;
+    --ring: 210, 100%, 50%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 240, 5%, 6%;
+    --foreground: 0, 0%, 98%;
+    --card: 240, 5%, 10%;
+    --card-foreground: 0, 0%, 98%;
+    --popover: 240, 5%, 10%;
+    --popover-foreground: 0, 0%, 98%;
+    --primary: 210, 100%, 50%;
+    --primary-foreground: 0, 0%, 100%;
+    --secondary: 240, 5%, 15%;
+    --secondary-foreground: 0, 0%, 98%;
+    --muted: 240, 5%, 12%;
+    --muted-foreground: 240, 5%, 65%;
+    --accent: 280, 80%, 60%;
+    --accent-foreground: 0, 0%, 100%;
+    --destructive: 0, 84%, 60%;
+    --destructive-foreground: 0, 0%, 100%;
+    --border: 240, 5%, 20%;
+    --input: 240, 5%, 15%;
+    --ring: 210, 100%, 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.bg-grid-pattern {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+}

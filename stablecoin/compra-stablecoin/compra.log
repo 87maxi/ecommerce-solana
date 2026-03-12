@@ -1,0 +1,15 @@
+
+> compra-stablecoin@1.0.0 dev
+> next dev -p 3033 -p 3033
+
+   ▲ Next.js 15.5.6
+   - Local:        http://localhost:3033
+   - Network:      http://10.6.1.205:3033
+   - Environments: .env.local, .env
+
+ ✓ Starting...
+ ✓ Ready in 1600ms
+ ○ Compiling / ...
+ ✓ Compiled / in 2.1s (905 modules)
+ GET /?redirect=http://localhost:3030 200 in 2767ms
+ ✓ Compiled in 255ms (395 modules)

@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Web3 Dark Theme Variables (Default) */
+:root {
+  --background: #0f172a;
+  --background-secondary: #1e293b;
+  --foreground: #e2e8f0;
+  --foreground-muted: #94a3b8;
+  
+  /* Primary - Cyan/Purple Gradient */
+  --primary: #22d3ee;
+  --primary-light: #67e8f9;
+  --primary-dark: #06b6d4;
+  --accent: #a855f7;
+  --accent-light: #c084fc;
+  --accent-dark: #9333ea;
+  
+  /* Semantic Colors */
+  --secondary: #8b5cf6;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  
+  /* UI Elements */
+  --card: rgba(30, 41, 59, 0.5);
+  --card-hover: rgba(51, 65, 85, 0.6);
+  --border: rgba(6, 182, 212, 0.2);
+  --border-accent: rgba(168, 85, 247, 0.3);
+  --muted: #64748b;
+  --muted-light: #475569;
+  
+  /* Shadows */
+  --shadow-cyan: rgba(34, 211, 238, 0.2);
+  --shadow-purple: rgba(168, 85, 247, 0.2);
+}
+
+/* Light Theme Override (Optional) */
+.light {
+  --background: #f8fafc;
+  --background-secondary: #f1f5f9;
+  --foreground: #1e293b;
+  --foreground-muted: #64748b;
+  
+  --primary: #06b6d4;
+  --primary-light: #22d3ee;
+  --primary-dark: #0891b2;
+  --accent: #9333ea;
+  --accent-light: #a855f7;
+  --accent-dark: #7e22ce;
+  
+  --card: #ffffff;
+  --card-hover: #f1f5f9;
+  --border: #e2e8f0;
+  --border-accent: rgba(168, 85, 247, 0.2);
+  --muted: #94a3b8;
+  --muted-light: #cbd5e1;
+  
+  --shadow-cyan: rgba(6, 182, 212, 0.15);
+  --shadow-purple: rgba(147, 51, 234, 0.15);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Web3 Specific Styles */
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-to-r from-cyan-500 to-purple-600 text-white hover:from-cyan-400 hover:to-purple-500 shadow-lg;
+  }
+
+  .btn-outline {
+    @apply border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10 hover:border-cyan-400/50 transition-all;
+  }
+
+  .card {
+    @apply bg-slate-800/50 backdrop-blur-sm border border-cyan-500/20 rounded-xl p-4 shadow-lg shadow-cyan-500/10 transition-all duration-200 hover:shadow-cyan-500/20 hover:border-cyan-500/30;
+  }
+
+  .input, .select {
+    @apply bg-slate-800/50 border border-cyan-500/30 rounded-lg px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-400/50 transition-all;
+  }
+
+  .connect-wallet-btn {
+    @apply btn bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white flex items-center justify-center space-x-2 shadow-lg shadow-cyan-500/20;
+  }
+
+  .network-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gradient-to-r from-cyan-500/20 to-cyan-600/20 text-cyan-300 border border-cyan-500/30;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent;
+  }
+}

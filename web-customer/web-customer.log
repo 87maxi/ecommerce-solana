@@ -1,0 +1,14 @@
+
+> web-customer@0.1.0 dev
+> next dev -p 3030
+
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3030
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1789ms
+ ○ Compiling / ...
+ ✓ Compiled / in 1869ms (944 modules)
+ GET / 200 in 2234ms
+ ✓ Compiled in 332ms (508 modules)
