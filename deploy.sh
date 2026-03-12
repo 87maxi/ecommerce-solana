@@ -29,12 +29,12 @@ solana airdrop 10 || true
 # 1. Build and Deploy Anchor Programs
 echo ""
 echo "📦 Building and Deploying Solana Anchor Program..."
-cd $ROOT/solana-stablecoin/solana
+cd $ROOT/solana-ecommerce
 
 echo "Compiling Anchor program..."
 anchor build
 
-PROGRAM_KEYPAIR="target/deploy/solana-keypair.json"
+PROGRAM_KEYPAIR="target/deploy/solana_ecommerce-keypair.json"
 PROGRAM_ID=$(solana address -k $PROGRAM_KEYPAIR)
 echo "📍 Program ID: $PROGRAM_ID"
 
@@ -48,7 +48,7 @@ else
     exit 1;
 fi
 
-IDL_JSON=$(cat target/idl/solana.json)
+IDL_JSON=$(cat target/idl/solana_ecommerce.json)
 
 # For now, we'll use the Program ID for both, as they are unified in one program.
 EUROTOKEN_MINT_ADDRESS=$PROGRAM_ID
