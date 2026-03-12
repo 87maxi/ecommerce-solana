@@ -1,21 +1,5 @@
 # Análisis del Proyecto stablecoin/pasarela-de-pago
 
-
-
-
-
-## Intruciones para inicializar el projecto 
-1. crea siempre el directorio     stablecoin/pasarela-de-pago, si no existe , este sera el workspace del projecto
-2. inicializa el projecto con el comando npm init en el directorio stablecoin/pasarela-de-pago
-3. usa en todo momento el directorio stablecoin/pasarela-de-pago como workspace para este desarrollo
-4. usa siempre  las herramientas basadas en nextjs, react, ethersjs
-5. usa siempre las convenciones de desarrollo de typescript
-6. tienes que hacer los procesos para mantener la coherencia en el desarrollo y el codigo
-7. presta especial atencion en los imports del codigo,
-10. ejecuta los comandos que sean necesarios
-11. crea los archivos necesarios para este projecto, siguiendo los estandares de nextjs
-
-
 ## Descripción General
 
 Esta aplicación funciona como una pasarela de pago descentralizada que permite a comerciantes recibir pagos en EuroToken de sus clientes. La pasarela maneja todo el flujo de pago, desde la conexión de la billetera hasta la confirmación de la transacción en blockchain.

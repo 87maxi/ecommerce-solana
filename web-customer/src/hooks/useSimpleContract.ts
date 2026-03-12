@@ -1,41 +1,46 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
-import EcommerceABI from '@/contracts/abis/EcommerceABI.json';
-import { useWallet } from './useWallet';
+import { useState, useEffect } from "react";
+import { Connection } from "@solana/web3.js";
+import { Program, AnchorProvider, Idl } from "@coral-xyz/anchor";
+import EcommerceABI from "@/contracts/abis/EcommerceABI.json";
+import { useWallet } from "./useWallet";
 
-const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_ECOMMERCE_CONTRACT_ADDRESS || '';
+const PROGRAM_ID = process.env.NEXT_PUBLIC_ECOMMERCE_CONTRACT_ADDRESS || "";
 
 export function useSimpleContract() {
-  const [contract, setContract] = useState<ethers.Contract | null>(null);
-  const { provider, account } = useWallet();
-  const [signer, setSigner] = useState<ethers.Signer | null>(null);
+  const [program, setProgram] = useState<Program | null>(null);
+  const { provider: connection, address, signer } = useWallet();
 
   useEffect(() => {
-    if (!provider || !account) {
+    if (!connection || !address || !signer) {
       return;
     }
 
-    const initContract = async () => {
+    const initProgram = async () => {
       try {
-        const web3Signer = provider.getSigner();
-        setSigner(web3Signer);
-
-        const ecommerceContract = new ethers.Contract(
-          CONTRACT_ADDRESS,
-          EcommerceABI,
-          web3Signer
+        const anchorProvider = new AnchorProvider(
+          connection,
+          signer as any,
+          AnchorProvider.defaultOptions(),
         );
 
-        setContract(ecommerceContract);
+        if (!PROGRAM_ID) {
+          console.warn("Program ID not provided in env.");
+          return;
+        }
+
+        const idl = { ...(EcommerceABI as any), address: PROGRAM_ID } as Idl;
+        const ecommerceProgram = new Program(idl, anchorProvider);
+
+        setProgram(ecommerceProgram);
       } catch (error) {
-        console.error('[useSimpleContract] Error initializing contract:', error);
+        console.error("[useSimpleContract] Error initializing program:", error);
       }
     };
 
-    initContract();
-  }, [provider, account]);
+    initProgram();
+  }, [connection, address, signer]);
 
-  return { contract, provider, signer };
+  return { contract: program, provider: connection, signer };
 }

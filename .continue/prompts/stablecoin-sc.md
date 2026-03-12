@@ -5,20 +5,6 @@
 El proyecto `stablecoin/sc` contiene la implementación del contrato inteligente para un token estable (EuroToken - EURT), diseñado para mantener una paridad 1:1 con el Euro. Este contrato permite la emisión (mint) y quema (burn) de tokens, así como la transferencia y verificación de saldos.
 
 
-## Intruciones para inicializar el projecto 
-1. crea siempre el directorio     sc-ecommerce, si no existe , este sera el workspace del projecto
-2. inicializa el projecto con el comando npm init en el directorio sc-ecommerce
-3. usa en todo momento el directorio sc-ecommerce como workspace para este desarrollo
-4. usa siempre  las herramientas basadas en anvil y foundry
-5. usa siempre las convenciones de desarrollo de solidity
-6. tienes que hacer los procesos para mantener la coherencia en el desarrollo y el codigo
-7. presta especial atencion en los imports del codigo,
-10. ejecuta los comandos que sean necesarios
-11. crea los archivos necesarios para este projecto, siguiendo los estandares de solidity
-
-
-
-
 ## Implementacion
 
    1. Implementar el contrato EuroToken

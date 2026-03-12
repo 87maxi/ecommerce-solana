@@ -1,55 +1,83 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
-import EuroTokenABI from '@/lib/EuroTokenABI';
-import { getContractAddress } from '@/lib/contracts/addresses';
-import { useWallet } from './useWallet';
+import { useState, useEffect } from "react";
+import { PublicKey } from "@solana/web3.js";
+import { getAssociatedTokenAddress } from "@solana/spl-token";
+import { useWallet } from "./useWallet";
 
 export function useEuroTokenBalance() {
-  const [balance, setBalance] = useState<string>('0');
+  const [balance, setBalance] = useState<string>("0");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { provider, account } = useWallet();
+
+  // provider acts as the Solana Connection, address is the connected wallet public key string
+  const { provider, address } = useWallet();
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchBalance = async () => {
-      if (!provider || !account) {
-        setBalance('0');
-        setLoading(false);
+      if (!provider || !address) {
+        if (isMounted) {
+          setBalance("0");
+          setLoading(false);
+        }
         return;
       }
 
       try {
-        setLoading(true);
-        setError(null);
+        if (isMounted) setLoading(true);
+        if (isMounted) setError(null);
 
-        // Get the EuroToken contract address from the addresses file
-        const euroTokenAddress = getContractAddress(31337, 'EuroToken');
+        const mintAddressStr =
+          process.env.NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS;
+        if (!mintAddressStr) {
+          throw new Error(
+            "EuroToken mint address not found in environment variables",
+          );
+        }
 
-        // Create contract instance
-        const euroTokenContract = new ethers.Contract(
-          euroTokenAddress,
-          EuroTokenABI,
-          provider
-        );
+        const mint = new PublicKey(mintAddressStr);
+        const userPubKey = new PublicKey(address);
 
-        // Get the balance
-        const balanceWei = await euroTokenContract.balanceOf(account);
-        const balanceFormatted = ethers.utils.formatUnits(balanceWei, 6); // 6 decimals for EURT
+        // Derive the Associated Token Account (ATA)
+        const ata = await getAssociatedTokenAddress(mint, userPubKey);
 
-        setBalance(balanceFormatted);
+        try {
+          // Fetch the SPL Token balance
+          const balanceInfo = await provider.getTokenAccountBalance(ata);
+          if (isMounted) {
+            setBalance(balanceInfo.value.uiAmountString || "0");
+          }
+        } catch (e) {
+          // If the account doesn't exist or hasn't been initialized, balance is effectively 0
+          if (isMounted) {
+            setBalance("0");
+          }
+        }
       } catch (err) {
-        console.error('Error fetching balance:', err);
-        setError('Failed to fetch EURT balance');
-        setBalance('0');
+        console.error("Error fetching balance:", err);
+        if (isMounted) {
+          setError("Failed to fetch EURT balance");
+          setBalance("0");
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchBalance();
-  }, [provider, account]);
+
+    // Poll for balance updates every 10 seconds
+    const interval = setInterval(fetchBalance, 10000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [provider, address]);
 
   return { balance, loading, error };
 }
