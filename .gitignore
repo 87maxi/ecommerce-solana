@@ -1,2 +1,57 @@
+# Archivos de bloqueo de paquetes
 */package-lock.json
+# Yarn lock files
+*/yarn.lock
+
+# Archivos de configuración de entorno
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Directorios de dependencias
+node_modules/
+
+# Directorios de caché y compilación de Next.js
+.next/
+out/
+
+# Directorios de caché de Anchor/Solana
+target/
+.anchor/
+# Si Anchor/Rust genera archivos en .cargo/ que no quieres rastrear
+.cargo/
+# Directorio específico para el programa Solana, si es un submódulo o quieres ignorarlo.
+# En nuestro caso, lo añadimos explícitamente porque es un submódulo.
 solana-stablecoin/solana/
+
+# Archivos de logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos de TypeScript
+*.tsbuildinfo
+
+# Directorios de test (si no se quieren rastrear)
+coverage/
+.nyc_output/
+
+# Archivos temporales o del OS
+.DS_Store
+*.tmp
+*.bak
+*~
+
+# IDE y otros archivos de herramientas
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Archivos generados por Turbopack/Next.js
+.next/cache/
+.next/static/
+.next/server/
