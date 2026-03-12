@@ -55,3 +55,4 @@ coverage/
 .next/cache/
 .next/static/
 .next/server/
+.surfpool/
