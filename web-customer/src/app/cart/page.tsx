@@ -39,7 +39,7 @@ export default function CartPage() {
     updateQuantity,
     createInvoice,
   } = useContract();
-  const { connected } = useWallet();
+  const { connected, publicKey } = useWallet();
   const {
     balance,
     loading: balanceLoading,
@@ -152,7 +152,7 @@ export default function CartPage() {
       // In a real app, you'd handle multiple companies or group them
       const invoiceId = await createInvoice(companyIds[0]);
 
-      if (invoiceId) {
+      if (invoiceId && connected && publicKey) {
         const totalAmount = cartItems.reduce((acc, item) => {
           return acc + parseFloat(item.product.price) * item.quantity;
         }, 0);
@@ -165,6 +165,7 @@ export default function CartPage() {
         const params = new URLSearchParams({
           amount: totalAmount.toString(),
           invoice: invoiceId.toString(),
+          walletAddress: publicKey.toString(),
           redirect: redirectUrl,
         });
 

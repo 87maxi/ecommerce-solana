@@ -40,11 +40,11 @@ function SuccessPageContent() {
 
       try {
         const success = searchParams.get("success");
-        const tokens = searchParams.get("tokens");
+        const amount = searchParams.get("amount");
         const invoiceId = searchParams.get("invoice");
         const wallet = searchParams.get("wallet");
 
-        if (success !== "true" || !tokens || !invoiceId) {
+        if (success !== "true" || !amount || !invoiceId) {
           setError("Parámetros de compra inválidos");
           setVerificationStatus("failed");
           return;
@@ -61,7 +61,7 @@ function SuccessPageContent() {
         const invoice = await contract.getInvoice(invoiceId);
 
         // Verify the amount matches
-        const expectedAmount = parseFloat(tokens);
+        const expectedAmount = parseFloat(amount);
         const actualAmount = parseFloat(invoice.totalAmount);
 
         if (Math.abs(expectedAmount - actualAmount) > 0.01) {

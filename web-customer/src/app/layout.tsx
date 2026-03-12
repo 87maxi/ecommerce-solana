@@ -9,6 +9,7 @@ import { ShoppingCart, Package, CreditCard, Store } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EuroTokenBalance } from "@/components/EuroTokenBalance";
 import { AppWalletProvider } from "@/components/AppWalletProvider";
+import { BuyEuroTokenButton } from "@/components/BuyEuroTokenButton";
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   const [cartItemCount, setCartItemCount] = useState(0);
@@ -103,18 +104,12 @@ function MainLayout({ children }: { children: React.ReactNode }) {
               <div className="hidden md:block">
                 <EuroTokenBalance />
               </div>
-              <a
-                href={`${process.env.NEXT_PUBLIC_COMPRAS_STABLEBOIN_URL || "http://localhost:3033"}?redirect=${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3030"}`}
-                className={cn(
-                  "hidden md:flex items-center gap-2",
-                  "bg-indigo-600/10 text-indigo-400 border border-indigo-600/20",
-                  "px-4 py-2 rounded-full text-sm font-medium",
-                  "hover:bg-indigo-600/20 hover:border-indigo-600/30 transition-all duration-200",
-                )}
-              >
-                <CreditCard className="w-4 h-4" />
-                Buy EURT
-              </a>
+              <BuyEuroTokenButton
+                redirectUrl={
+                  process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3030"
+                }
+                className="hidden md:flex"
+              />
               <div className="h-6 w-px bg-border/50 hidden md:block" />
               <WalletConnectHeader />
               <MobileMenu cartItemCount={cartItemCount} />
