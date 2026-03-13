@@ -34,10 +34,15 @@ function SuccessPageContent() {
       try {
         const mintAddressStr =
           process.env.NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS;
-        if (!mintAddressStr) throw new Error("Mint address not configured");
+        if (!mintAddressStr || mintAddressStr.trim() === "") {
+          throw new Error("Mint address not configured");
+        }
 
-        const mint = new PublicKey(mintAddressStr);
-        const userPubKey = new PublicKey(address);
+        const cleanMint = mintAddressStr.trim();
+        const cleanAddress = address.trim();
+
+        const mint = new PublicKey(cleanMint);
+        const userPubKey = new PublicKey(cleanAddress);
         const ata = await getAssociatedTokenAddress(mint, userPubKey);
 
         for (let i = 0; i < 5; i++) {

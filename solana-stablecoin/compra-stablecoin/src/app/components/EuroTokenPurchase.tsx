@@ -70,9 +70,13 @@ export default function EuroTokenPurchase() {
 
     try {
       const mintAddressStr = process.env.NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS;
-      if (!mintAddressStr) {
+      if (!mintAddressStr || mintAddressStr.trim() === "") {
         throw new Error("Dirección del Mint de EuroToken no configurada");
       }
+
+      // Limpiar y validar direcciones
+      const cleanMint = mintAddressStr.trim();
+      const cleanAddress = address.trim();
 
       console.log("[VALIDATION] Checking Solana connection and Mint...");
 
@@ -80,8 +84,16 @@ export default function EuroTokenPurchase() {
       const slot = await connection.getSlot();
 
       // 2. Obtener balance actual de EURT en Solana
-      const mint = new PublicKey(mintAddressStr);
-      const userPubKey = new PublicKey(address);
+      let mint: PublicKey;
+      let userPubKey: PublicKey;
+
+      try {
+        mint = new PublicKey(cleanMint);
+        userPubKey = new PublicKey(cleanAddress);
+      } catch (e) {
+        throw new Error("Formato de clave pública inválido (Base58 error)");
+      }
+
       const ata = await getAssociatedTokenAddress(mint, userPubKey);
 
       let balanceFormatted = "0.00";
@@ -114,11 +126,33 @@ export default function EuroTokenPurchase() {
 
   const handleWalletConnected = async (address: string) => {
     console.log("Wallet connected:", address);
-    setWalletAddress(address);
-    sessionStorage.setItem("wallet_address", address);
+
+    // Validar y limpiar la dirección de la wallet
+    if (!address || address.trim() === "") {
+      setError("La dirección de la wallet no puede estar vacía");
+      return;
+    }
+    const cleanedAddress = address.trim();
+
+    // Validar que la dirección tenga la longitud correcta
+    if (cleanedAddress.length < 32 || cleanedAddress.length > 44) {
+      setError("La longitud de la dirección de la wallet es inválida");
+      return;
+    }
+
+    // Validar que la dirección contenga solo caracteres Base58
+    const base58Regex = /^[1-9A-HJ-NP-Za-km-z]+$/;
+    if (!base58Regex.test(cleanedAddress)) {
+      setError("La dirección de la wallet contiene caracteres no válidos");
+      return;
+    }
+
+    // Si la dirección es válida, continuar con el proceso
+    setWalletAddress(cleanedAddress);
+    sessionStorage.setItem("wallet_address", cleanedAddress);
 
     try {
-      await validateBeforeRedirect(address);
+      await validateBeforeRedirect(cleanedAddress);
       setCurrentStep(2.5);
     } catch (err) {
       setError(
@@ -129,6 +163,26 @@ export default function EuroTokenPurchase() {
   };
 
   const handleConfirmTransaction = async () => {
+    if (!walletAddress) {
+      setError("Dirección de wallet no encontrada");
+      return;
+    }
+
+    // Asegurar que la dirección esté limpia antes de enviar
+    const cleanAddress = walletAddress.trim();
+
+    // Validación de seguridad de último minuto para evitar errores de Base58
+    try {
+      new PublicKey(cleanAddress);
+    } catch (e) {
+      console.error(
+        "[CONFIRM] Invalid wallet address for Solana:",
+        cleanAddress,
+      );
+      setError("La dirección de la wallet es inválida (Base58 error)");
+      return;
+    }
+
     setCurrentStep(3);
 
     const pasarelaUrl =
@@ -136,12 +190,18 @@ export default function EuroTokenPurchase() {
     const invoice = sessionStorage.getItem("invoice") || "EURT_" + Date.now();
 
     try {
+      console.log("[CONFIRM] Creating payment intent for:", {
+        amount,
+        walletAddress: cleanAddress,
+        invoice,
+      });
+
       const res = await fetch(`${pasarelaUrl}/api/create-payment-intent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: amount,
-          walletAddress: walletAddress,
+          walletAddress: cleanAddress,
           invoice: invoice,
         }),
       });

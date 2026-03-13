@@ -25,20 +25,67 @@ const WalletConnect = ({ onWalletConnected }: Props) => {
       try {
         const mintAddressStr =
           process.env.NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS;
-        if (!mintAddressStr) {
+
+        console.log("[WalletConnect] Mint address from env:", mintAddressStr);
+
+        if (!mintAddressStr || mintAddressStr.trim() === "") {
           console.warn(
             "[WalletConnect] NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS not configured",
           );
           return;
         }
 
+        const cleanMint = mintAddressStr.trim();
+
         // Defensive validation for PublicKeys to prevent crashes
         let mint: PublicKey;
         let userPubKey: PublicKey;
 
         try {
-          mint = new PublicKey(mintAddressStr);
-          userPubKey = new PublicKey(address);
+          // Validar que la dirección no esté vacía y tenga el formato correcto
+          if (!address || address.trim() === "") {
+            console.error("[WalletConnect] Empty address provided");
+            return;
+          }
+
+          // Limpiar la dirección de espacios en blanco
+          const cleanedAddress = address.trim();
+
+          // Validar que la dirección tenga la longitud correcta para una dirección Solana
+          if (cleanedAddress.length < 32 || cleanedAddress.length > 44) {
+            console.error(
+              "[WalletConnect] Invalid address length:",
+              cleanedAddress,
+            );
+            return;
+          }
+
+          // Validar que la dirección contenga solo caracteres Base58 válidos
+          const base58Regex = /^[1-9A-HJ-NP-Za-km-z]+$/;
+          if (!base58Regex.test(cleanedAddress)) {
+            console.error(
+              "[WalletConnect] Non-base58 character found in wallet address:",
+              cleanedAddress,
+            );
+            return;
+          }
+
+          // Validar la dirección del mint también
+          if (!base58Regex.test(cleanMint)) {
+            console.error(
+              "[WalletConnect] Non-base58 character found in mint address:",
+              cleanMint,
+            );
+            return;
+          }
+
+          console.log("[WalletConnect] Creating PublicKeys for:", {
+            mint: cleanMint,
+            user: cleanedAddress,
+          });
+
+          mint = new PublicKey(cleanMint);
+          userPubKey = new PublicKey(cleanedAddress);
         } catch (e) {
           console.error("[WalletConnect] Invalid public key format:", e);
           return;
