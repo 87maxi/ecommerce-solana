@@ -1,4 +1,4 @@
-```"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { loadStripe } from "@stripe/stripe-js";
@@ -133,7 +133,7 @@ export default function EuroTokenPurchase() {
 
     const pasarelaUrl =
       process.env.NEXT_PUBLIC_PASARELA_PAGO_URL || "http://localhost:3034";
-    const invoice = sessionStorage.getItem("invoice") || `EURT_${Date.now()}`;
+    const invoice = sessionStorage.getItem("invoice") || "EURT_" + Date.now();
 
     try {
       const res = await fetch(`${pasarelaUrl}/api/create-payment-intent`, {
@@ -404,9 +404,9 @@ export default function EuroTokenPurchase() {
                 amount={amount}
                 walletAddress={walletAddress!}
                 invoice={
-                  sessionStorage.getItem("invoice") || `EURT_${Date.now()}`
+                  sessionStorage.getItem("invoice") || "EURT_" + Date.now()
                 }
-                redirectUrl={`${window.location.origin}/success`}
+                redirectUrl={window.location.origin + "/success"}
               />
             </Elements>
           )}
@@ -455,7 +455,9 @@ export default function EuroTokenPurchase() {
                   {amount} EURT
                 </strong>
                 <span className="text-slate-500">≈</span>
-                <span className="text-white font-mono">€{amount.toFixed(2)}</span>
+                <span className="text-white font-mono">
+                  €{amount.toFixed(2)}
+                </span>
               </div>
             </div>
           </div>
