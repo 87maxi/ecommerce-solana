@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { PublicKey } from "@solana/web3.js";
@@ -13,37 +13,63 @@ interface Props {
 const WalletConnect = ({ onWalletConnected }: Props) => {
   const { publicKey, connected } = useWallet();
   const { connection } = useConnection();
-  const [balance, setBalance] = useState("0");
+  const [balance, setBalance] = useState("0.00");
   const [isProcessing, setIsProcessing] = useState(false);
 
   const walletAddress = publicKey?.toBase58() || "";
 
-  const updateBalance = async (address: string) => {
-    if (!address || !connection) return;
-
-    try {
-      const mintAddressStr = process.env.NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS;
-      if (!mintAddressStr) {
-        console.warn("NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS not configured");
-        return;
-      }
-
-      const mint = new PublicKey(mintAddressStr);
-      const userPubKey = new PublicKey(address);
-      const ata = await getAssociatedTokenAddress(mint, userPubKey);
+  const updateBalance = useCallback(
+    async (address: string) => {
+      if (!address || !connection) return;
 
       try {
-        const balanceInfo = await connection.getTokenAccountBalance(ata);
-        setBalance(balanceInfo.value.uiAmountString || "0");
-      } catch (e) {
-        // If ATA doesn't exist, balance is 0
-        setBalance("0");
+        const mintAddressStr =
+          process.env.NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS;
+        if (!mintAddressStr) {
+          console.warn(
+            "[WalletConnect] NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS not configured",
+          );
+          return;
+        }
+
+        // Defensive validation for PublicKeys to prevent crashes
+        let mint: PublicKey;
+        let userPubKey: PublicKey;
+
+        try {
+          mint = new PublicKey(mintAddressStr);
+          userPubKey = new PublicKey(address);
+        } catch (e) {
+          console.error("[WalletConnect] Invalid public key format:", e);
+          return;
+        }
+
+        const ata = await getAssociatedTokenAddress(mint, userPubKey);
+
+        try {
+          const balanceInfo = await connection.getTokenAccountBalance(ata);
+          setBalance(balanceInfo.value.uiAmountString || "0.00");
+        } catch (e: any) {
+          // If ATA doesn't exist (account not found), balance is effectively 0
+          if (
+            e.message?.includes("could not find account") ||
+            e.code === -32602
+          ) {
+            setBalance("0.00");
+          } else {
+            console.error("[WalletConnect] RPC error fetching balance:", e);
+          }
+        }
+      } catch (error) {
+        console.error(
+          "[WalletConnect] Unexpected error in updateBalance:",
+          error,
+        );
+        setBalance("0.00");
       }
-    } catch (error) {
-      console.error("Error fetching balance:", error);
-      setBalance("0");
-    }
-  };
+    },
+    [connection],
+  );
 
   const handleContinue = async () => {
     if (isProcessing || !walletAddress) return;
@@ -51,7 +77,7 @@ const WalletConnect = ({ onWalletConnected }: Props) => {
     try {
       await onWalletConnected(walletAddress);
     } catch (error) {
-      console.error("Error continuing:", error);
+      console.error("[WalletConnect] Error notifying parent:", error);
     } finally {
       setIsProcessing(false);
     }
@@ -60,12 +86,11 @@ const WalletConnect = ({ onWalletConnected }: Props) => {
   useEffect(() => {
     if (connected && walletAddress) {
       updateBalance(walletAddress);
-      // Notify parent on connection
       onWalletConnected(walletAddress);
     } else {
-      setBalance("0");
+      setBalance("0.00");
     }
-  }, [connected, walletAddress, connection]);
+  }, [connected, walletAddress, updateBalance, onWalletConnected]);
 
   return (
     <div className="space-y-4">
