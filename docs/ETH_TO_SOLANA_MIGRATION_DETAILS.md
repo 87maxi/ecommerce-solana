@@ -33,6 +33,12 @@ Migramos las funciones de las librerías de Solidity a instrucciones de Anchor:
 ### Paso 3: Manejo de Errores
 Se creó un módulo `errors.rs` definiendo un enum `EcommerceError`. Esto reemplaza los strings de `require()` en Solidity por códigos de error numéricos eficientes en Solana, facilitando el debugging en el frontend.
 
+### Paso 4: Adaptación de la Interfaz de Compra (compra-stablecoin)
+Se eliminó la dependencia de `ethers.js` y `MetaMask` para adoptar un enfoque agnóstico a la billetera:
+- **Conectividad**: Migración a `@solana/wallet-adapter-react`, permitiendo el uso de Phantom, Backpack y Solflare.
+- **Detección de Balance**: Implementación de lógica de polling en la página de éxito para detectar tokens minteados una vez confirmado el pago por Stripe.
+- **Estandarización de Parámetros**: Se unificaron las redirecciones usando el parámetro `amount` en lugar de `tokens` para mayor consistencia en el ecosistema.
+
 ## 3. Librerías y Herramientas Implementadas
 
 | Herramienta | Rol en la Migración |
@@ -41,6 +47,8 @@ Se creó un módulo `errors.rs` definiendo un enum `EcommerceError`. Esto reempl
 | **anchor-lang (init-if-needed)** | Característica clave para simplificar el flujo de usuario al registrar clientes o carritos. |
 | **Borsh** | Serialización binaria eficiente para el almacenamiento en cuentas. |
 | **Solana web3.js (1.98)** | Interacción desde las UIs (Admin y Customer) con el programa migrado. |
+| **Solana Wallet Adapters** | Conectividad agnóstica a billeteras (Phantom, Solflare, etc.). |
+| **@solana/spl-token** | Gestión de balances y cuentas asociadas (ATA) de EURT. |
 | **Surfpool** | Entorno de desarrollo local para simular la red de Solana. |
 
 ## 4. Funcionalidades Cumplidas tras la Migración
