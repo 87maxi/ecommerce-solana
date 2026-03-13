@@ -108,11 +108,19 @@ function SuccessPageContent() {
       }
 
       try {
-        const pasarelaUrl =
-          process.env.NEXT_PUBLIC_PASARELA_PAGO_URL || "http://localhost:3034";
-        const response = await fetch(
-          pasarelaUrl + "/api/verify-minting?payment_intent=" + paymentIntentId,
-        );
+        const baseUrl = (
+          process.env.NEXT_PUBLIC_PASARELA_PAGO_URL || "http://localhost:3034"
+        ).trim();
+        // Evitar doble barra si la URL ya termina en barra
+        const pasarelaUrl = baseUrl.endsWith("/")
+          ? baseUrl.slice(0, -1)
+          : baseUrl;
+        const cleanPaymentIntentId = (paymentIntentId || "").trim();
+        const fullUrl = `${pasarelaUrl}/api/verify-minting?payment_intent=${cleanPaymentIntentId}`;
+
+        console.log("[VERIFY-PURCHASE] Verificando en:", fullUrl);
+
+        const response = await fetch(fullUrl);
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -149,15 +157,15 @@ function SuccessPageContent() {
             );
           }
         }
-      } catch (err) {
-        console.error("Verification fetch error:", err);
+      } catch (err: any) {
+        console.error("[VERIFY-PURCHASE] Error de red o servidor:", err);
         if (isMountedRef.current) {
           setPayment((prev) => ({
             ...prev,
             status: "error",
             error:
               err instanceof Error
-                ? err.message
+                ? `Error de conexión: ${err.message}`
                 : "Error de conexión con la pasarela. Reintentando...",
             amount: storedAmount,
             invoice: storedInvoice,

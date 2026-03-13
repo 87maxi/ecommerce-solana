@@ -3,6 +3,16 @@ import { orders } from "@/lib/orderStorage"; // We'll keep this for a fallback, 
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY!);
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 /**
  * Endpoint to verify if tokens were successfully minted.
  * This has been refactored to fetch the payment status directly from the Stripe API,
@@ -16,7 +26,7 @@ export async function GET(request: NextRequest) {
     if (!paymentIntentId) {
       return NextResponse.json(
         { success: false, error: "Payment Intent ID is required" },
-        { status: 400 },
+        { status: 400, headers: corsHeaders },
       );
     }
 
@@ -36,31 +46,40 @@ export async function GET(request: NextRequest) {
 
         if (order && order.status === "completed") {
           console.log("[VERIFY-MINTING] Order found and completed in storage.");
-          return NextResponse.json({
-            success: true,
-            status: order.status,
-            txHash: order.txHash,
-            amount: order.tokenAmount,
-            walletAddress: order.buyerAddress,
-            invoice: order.invoice,
-          });
+          return NextResponse.json(
+            {
+              success: true,
+              status: order.status,
+              txHash: order.txHash,
+              amount: order.tokenAmount,
+              walletAddress: order.buyerAddress,
+              invoice: order.invoice,
+            },
+            { headers: corsHeaders },
+          );
         } else {
           // Payment succeeded but minting might be delayed (webhook processing)
           console.log(
             "[VERIFY-MINTING] Payment succeeded, but minting not yet completed in storage. Status:",
             order?.status,
           );
-          return NextResponse.json({ success: false, status: "processing" });
+          return NextResponse.json(
+            { success: false, status: "processing" },
+            { headers: corsHeaders },
+          );
         }
       } else {
         // Payment has not succeeded yet
         console.warn(
           `[VERIFY-MINTING] Payment intent ${paymentIntentId} not succeeded yet. Status: ${paymentIntent.status}`,
         );
-        return NextResponse.json({
-          success: false,
-          status: paymentIntent.status,
-        });
+        return NextResponse.json(
+          {
+            success: false,
+            status: paymentIntent.status,
+          },
+          { headers: corsHeaders },
+        );
       }
     } catch (stripeError: any) {
       console.error(
@@ -73,7 +92,7 @@ export async function GET(request: NextRequest) {
           error: "Stripe API error",
           details: stripeError.message,
         },
-        { status: 500 },
+        { status: 500, headers: corsHeaders },
       );
     }
   } catch (error: any) {
@@ -84,7 +103,7 @@ export async function GET(request: NextRequest) {
         error: "Error verifying minting",
         details: error.message,
       },
-      { status: 500 },
+      { status: 500, headers: corsHeaders },
     );
   }
 }
