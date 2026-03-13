@@ -1,10 +1,18 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { Menu, X, ShoppingCart, Package, Store, CreditCard } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { EuroTokenBalance } from '@/components/EuroTokenBalance';
+import { useState } from "react";
+import Link from "next/link";
+import {
+  Menu,
+  X,
+  ShoppingCart,
+  Package,
+  Store,
+  CreditCard,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { EuroTokenBalance } from "@/components/EuroTokenBalance";
+import { useIsMounted } from "@/hooks/useIsMounted";
 
 interface MobileMenuProps {
   cartItemCount: number;
@@ -12,6 +20,15 @@ interface MobileMenuProps {
 
 export default function MobileMenu({ cartItemCount }: MobileMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const isMounted = useIsMounted();
+
+  if (!isMounted) {
+    return (
+      <div className="md:hidden">
+        <div className="text-foreground p-2 w-10 h-10 bg-secondary/50 rounded-lg animate-pulse" />
+      </div>
+    );
+  }
 
   return (
     <div className="md:hidden">
@@ -31,7 +48,7 @@ export default function MobileMenu({ cartItemCount }: MobileMenuProps) {
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl",
                 "text-foreground/80 hover:text-primary hover:bg-secondary/50",
-                "transition-all duration-200"
+                "transition-all duration-200",
               )}
               onClick={() => setIsOpen(false)}
             >
@@ -44,7 +61,7 @@ export default function MobileMenu({ cartItemCount }: MobileMenuProps) {
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl",
                 "text-foreground/80 hover:text-primary hover:bg-secondary/50",
-                "transition-all duration-200"
+                "transition-all duration-200",
               )}
               onClick={() => setIsOpen(false)}
             >
@@ -64,7 +81,7 @@ export default function MobileMenu({ cartItemCount }: MobileMenuProps) {
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl",
                 "text-foreground/80 hover:text-primary hover:bg-secondary/50",
-                "transition-all duration-200"
+                "transition-all duration-200",
               )}
               onClick={() => setIsOpen(false)}
             >
@@ -73,7 +90,7 @@ export default function MobileMenu({ cartItemCount }: MobileMenuProps) {
             </Link>
 
             <div className="h-px bg-border/50 my-2" />
-            
+
             <div className="px-4 py-2">
               <EuroTokenBalance />
             </div>
@@ -84,7 +101,7 @@ export default function MobileMenu({ cartItemCount }: MobileMenuProps) {
                 "flex items-center gap-3 px-4 py-3 rounded-xl",
                 "bg-indigo-600/10 text-indigo-400 border border-indigo-600/20",
                 "hover:bg-indigo-600/20 hover:border-indigo-600/30",
-                "transition-all duration-200"
+                "transition-all duration-200",
               )}
               onClick={() => setIsOpen(false)}
             >

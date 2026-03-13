@@ -1,10 +1,18 @@
-'use client';
+"use client";
 
-import { useEuroTokenBalance } from '@/hooks/useEuroTokenBalance';
-import { Loader2, Coins } from 'lucide-react';
+import { useEuroTokenBalance } from "@/hooks/useEuroTokenBalance";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { Loader2, Coins } from "lucide-react";
 
 export function EuroTokenBalance() {
   const { balance, loading, error } = useEuroTokenBalance();
+  const isMounted = useIsMounted();
+
+  if (!isMounted) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground px-3 py-1.5 bg-slate-800/50 rounded-lg border border-slate-700/50 animate-pulse w-32 h-8"></div>
+    );
+  }
 
   if (loading) {
     return (
@@ -30,9 +38,13 @@ export function EuroTokenBalance() {
     <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-emerald-900/20 to-cyan-900/20 rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all">
       <div className="flex items-center gap-1.5">
         <Coins className="w-4 h-4 text-emerald-400" />
-        <span className="text-xs font-medium text-emerald-300 uppercase tracking-wider">EURT</span>
+        <span className="text-xs font-medium text-emerald-300 uppercase tracking-wider">
+          EURT
+        </span>
       </div>
-      <span className={`font-mono text-sm font-bold ${hasBalance ? 'text-emerald-400' : 'text-slate-400'}`}>
+      <span
+        className={`font-mono text-sm font-bold ${hasBalance ? "text-emerald-400" : "text-slate-400"}`}
+      >
         {balanceNum.toFixed(2)}
       </span>
       {hasBalance && (
