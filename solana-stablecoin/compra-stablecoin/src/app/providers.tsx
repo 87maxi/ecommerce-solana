@@ -12,14 +12,18 @@ import { BackpackWalletAdapter } from "@solana/wallet-adapter-backpack";
 import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
 import { clusterApiUrl } from "@solana/web3.js";
 
-// Default styles that can be overridden by your app
-require("@solana/wallet-adapter-react-ui/styles.css");
+// Importación de estilos usando sintaxis ESM para mejor compatibilidad con Turbopack
+import "@solana/wallet-adapter-react-ui/styles.css";
 
+/**
+ * Proveedor de billetera para la aplicación de compra de stablecoin.
+ * Permite la conexión a Solana de forma agnóstica a la billetera.
+ */
 export function AppWalletProvider({ children }: { children: React.ReactNode }) {
-  // Can be set to 'devnet', 'testnet', or 'mainnet-beta'
+  // Configuración de red (devnet para desarrollo/pruebas)
   const network = WalletAdapterNetwork.Devnet;
 
-  // Use local net for development if specified, otherwise use clusterApiUrl
+  // Endpoint de conexión priorizando variables de entorno para redes locales (Surfpool)
   const endpoint = useMemo(() => {
     if (process.env.NEXT_PUBLIC_RPC_URL) {
       return process.env.NEXT_PUBLIC_RPC_URL;
@@ -27,9 +31,7 @@ export function AppWalletProvider({ children }: { children: React.ReactNode }) {
     return clusterApiUrl(network);
   }, [network]);
 
-  // @solana/wallet-adapter-wallets includes a lot of wallets that require
-  // additional dependencies. To keep your bundle size small, add only the wallets
-  // you want to support directly from their own packages.
+  // Selección de adaptadores de billetera soportados
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
