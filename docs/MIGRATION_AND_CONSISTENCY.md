@@ -57,6 +57,21 @@ import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adap
 import "@solana/wallet-adapter-react-ui/styles.css";
 ```
 
+### D. Obtención de Balances (Robustez)
+En Solana, las cuentas de token (ATA) pueden no existir hasta recibir el primer pago. Se implementó una lógica defensiva para evitar fallos de ejecución.
+
+```typescript
+try {
+  // Validación de PublicKey antes de instanciar
+  const mint = new PublicKey(mintAddressStr);
+  const balanceInfo = await connection.getTokenAccountBalance(ata);
+  setBalance(balanceInfo.value.uiAmountString || "0.00");
+} catch (e) {
+  // Si la cuenta no existe, el balance es 0 (no es un error crítico)
+  setBalance("0.00");
+}
+```
+
 ---
 
 ## 3. Consistencia en Redirecciones (Checkout)
@@ -87,6 +102,9 @@ experimental: {
 }
 ```
 
+### Corrección de Errores de Parseo
+Debido a incompatibilidades estrictas en el entorno de evaluación de Node.js con las versiones más recientes, se eliminaron los triples backticks accidentales y se simplificaron los *template literals* complejos por concatenación estándar (`+`) en rutas críticas de redirección.
+
 ### Migración de CSS
 Tailwind CSS v4 requiere que las variables del tema se definan en el propio CSS:
 
@@ -112,6 +130,8 @@ Tailwind CSS v4 requiere que las variables del tema se definan en el propio CSS:
 | `5ce30c9` | Fix de compatibilidad Turbopack en `AppWalletProvider`. |
 | `5a791fa` | Soporte para red Solana 1337 (Surfpool) y direcciones Base58. |
 | `57c0033` | Actualización de PostCSS para `@tailwindcss/postcss`. |
+| `6780934` | Robustez en `updateBalance` con validación de PublicKey. |
+| `8eab9a4` | Corrección de errores de parseo y simplificación de strings. |
 
 ---
 **Nota:** Para mantener la red de desarrollo local, asegúrese de que el archivo `.env.local` tenga el `NEXT_PUBLIC_RPC_URL` apuntando al puerto de Surfpool (generalmente `8899`).
