@@ -4,174 +4,117 @@ import {
   Keypair,
   Transaction,
   sendAndConfirmTransaction,
-  TransactionInstruction,
 } from "@solana/web3.js";
-import {
-  getAssociatedTokenAddress,
-  createAssociatedTokenAccountInstruction,
-  getAccount,
-  TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
-import bs58 from "bs58";
-import crypto from "crypto";
+import { getOrCreateAssociatedTokenAccount, mintTo } from "@solana/spl-token";
 
 /**
- * Mints EuroTokens to a user's Solana wallet
+ * Mints EuroTokens (EURT) to a specified wallet address after a successful payment.
+ * This function corrects the "IncorrectProgramId" error by using the high-level
+ * helper functions from @solana/spl-token, which ensures the correct Token
+ * Program ID is used for all token-related instructions.
+ *
+ * @param walletAddress The recipient's Solana wallet address (as a string).
+ * @param amount The number of tokens to mint (e.g., 100.00).
+ * @param invoice A reference invoice ID for logging.
+ * @returns A promise that resolves to an object containing the transaction hash.
  */
 export async function mintTokens(
   walletAddress: string,
   amount: number,
   invoice: string,
-) {
-  console.log(`[MINT-TOKENS] Starting mint process:`, {
-    walletAddress,
-    amount,
-    invoice,
-  });
-
-  const rpcUrl = process.env.RPC_URL || "http://127.0.0.1:8899";
-  console.log(`[MINT-TOKENS] Connecting to RPC: ${rpcUrl}`);
-  const connection = new Connection(rpcUrl, "confirmed");
-
-  const privateKeyStr =
-    process.env.OWNER_PRIVATE_KEY || process.env.PRIVATE_KEY;
-  if (!privateKeyStr) {
-    throw new Error("Missing OWNER_PRIVATE_KEY or PRIVATE_KEY in environment");
-  }
-
-  let secretKey: Uint8Array;
-  try {
-    // Check if the key is a JSON array
-    secretKey = Uint8Array.from(JSON.parse(privateKeyStr));
-  } catch {
-    // Fallback to base58
-    secretKey = bs58.decode(privateKeyStr);
-  }
-
-  const wallet = Keypair.fromSecretKey(secretKey);
+): Promise<{ transactionHash: string }> {
   console.log(
-    `[MINT-TOKENS] Using wallet address: ${wallet.publicKey.toBase58()}`,
+    `[MINTING] Initiating mint for invoice ${invoice}: ${amount} EURT to ${walletAddress}`,
   );
 
-  const mintAddressStr = process.env.NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS;
-  if (!mintAddressStr) {
+  // 1. Establish Connection to the Solana cluster.
+  const rpcUrl = process.env.RPC_URL;
+  if (!rpcUrl) {
+    throw new Error("RPC_URL is not defined in environment variables.");
+  }
+  const connection = new Connection(rpcUrl, "confirmed");
+  console.log(`[MINTING] Connected to RPC endpoint: ${rpcUrl}`);
+
+  // 2. Load the Minter's Keypair from the environment variable.
+  // This keypair must have minting authority for the EURT token.
+  const ownerPrivateKeyString = process.env.OWNER_PRIVATE_KEY;
+  if (!ownerPrivateKeyString) {
+    throw new Error("OWNER_PRIVATE_KEY is not set in environment variables.");
+  }
+
+  // The private key from `~/.config/solana/id.json` is a JSON array of numbers.
+  // We parse it into a Uint8Array to load the Keypair.
+  const secretKey = Uint8Array.from(JSON.parse(ownerPrivateKeyString));
+  const minter = Keypair.fromSecretKey(secretKey);
+
+  // 3. Define the necessary public keys.
+  const recipientPublicKey = new PublicKey(walletAddress);
+  const mintPublicKeyStr = process.env.NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS;
+  if (!mintPublicKeyStr) {
     throw new Error(
-      "Missing NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS in environment",
+      "NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS is not set in environment variables.",
     );
   }
+  const mintPublicKey = new PublicKey(mintPublicKeyStr);
 
-  const mint = new PublicKey(mintAddressStr);
-  const userPubKey = new PublicKey(walletAddress);
-  const programId = new PublicKey(
-    "8yCgaxbTDGiWe6XuMAq6XUimC8ovSx5J4GEJnEKuhGk5",
-  );
-
-  console.log(
-    `[MINT-TOKENS] Fetching or creating Associated Token Account for user...`,
-  );
-  const userAta = await getAssociatedTokenAddress(mint, userPubKey);
-
-  const tx = new Transaction();
+  // Diagnostic logging to help debug future issues.
+  console.log("[MINTING] Key Information:");
+  console.log(`  - Recipient Wallet: ${recipientPublicKey.toBase58()}`);
+  console.log(`  - EURT Mint Address: ${mintPublicKey.toBase58()}`);
+  console.log(`  - Mint Authority (Payer): ${minter.publicKey.toBase58()}`);
 
   try {
-    await getAccount(connection, userAta);
-    console.log(`[MINT-TOKENS] User ATA already exists: ${userAta.toBase58()}`);
-  } catch (e: any) {
+    // 4. Get or create the Associated Token Account (ATA) for the recipient.
+    // The `getOrCreateAssociatedTokenAccount` helper function is crucial as it handles
+    // the creation of the ATA if it doesn't exist, using the correct
+    // Associated Token Program ID. The `minter` pays for this creation.
     console.log(
-      `[MINT-TOKENS] User ATA not found, adding creation instruction for: ${userAta.toBase58()}`,
+      `[MINTING] Looking for or creating ATA for wallet ${recipientPublicKey.toBase58()}...`,
     );
-    tx.add(
-      createAssociatedTokenAccountInstruction(
-        wallet.publicKey, // payer
-        userAta, // ata
-        userPubKey, // owner
-        mint, // mint
-      ),
+    const associatedTokenAccount = await getOrCreateAssociatedTokenAccount(
+      connection,
+      minter, // Payer for the transaction if ATA needs to be created
+      mintPublicKey, // The mint of the token
+      recipientPublicKey, // The owner of the ATA
     );
-  }
-
-  const [mintAuthority] = PublicKey.findProgramAddressSync(
-    [Buffer.from("mint_authority")],
-    programId,
-  );
-
-  // EuroToken has 6 decimals
-  const amountInSmallestUnit = Math.floor(amount * 1_000_000);
-  console.log(
-    `[MINT-TOKENS] Sending transaction to Solana... Amount: ${amountInSmallestUnit}`,
-  );
-
-  // Compute the 8-byte discriminator for 'global:mint_tokens'
-  const discriminator = crypto
-    .createHash("sha256")
-    .update("global:mint_tokens")
-    .digest()
-    .subarray(0, 8);
-
-  // Build data buffer: 8 bytes discriminator + 8 bytes u64 amount
-  const data = Buffer.alloc(16);
-  discriminator.copy(data, 0);
-  data.writeBigUInt64LE(BigInt(amountInSmallestUnit), 8);
-
-  // Build the instruction mapping exactly to the MintTokens struct in our Anchor program
-  const mintIx = new TransactionInstruction({
-    programId: programId,
-    keys: [
-      { pubkey: mint, isSigner: false, isWritable: true },
-      { pubkey: mintAuthority, isSigner: false, isWritable: false },
-      { pubkey: userAta, isSigner: false, isWritable: true },
-      { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
-      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-    ],
-    data: data,
-  });
-
-  tx.add(mintIx);
-
-  const signature = await sendAndConfirmTransaction(connection, tx, [wallet]);
-
-  console.log(`[MINT-TOKENS] Tokens minted successfully!`, {
-    transactionHash: signature,
-    walletAddress,
-    amount,
-  });
-
-  return {
-    transactionHash: signature,
-    walletAddress,
-    amount,
-    invoice,
-    timestamp: new Date().toISOString(),
-  };
-}
-
-/**
- * Gets the EuroToken balance for a user's wallet
- */
-export async function getBalance(walletAddress: string) {
-  const rpcUrl = process.env.RPC_URL || "http://127.0.0.1:8899";
-  const connection = new Connection(rpcUrl, "confirmed");
-
-  const mintAddressStr = process.env.NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS;
-  if (!mintAddressStr) {
-    throw new Error(
-      "Missing NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS in environment",
+    console.log(
+      `[MINTING] ATA address: ${associatedTokenAccount.address.toBase58()}`,
     );
-  }
 
-  try {
-    const mint = new PublicKey(mintAddressStr);
-    const userPubKey = new PublicKey(walletAddress);
+    // 5. Mint the tokens to the recipient's ATA.
+    // The amount needs to be scaled by the token's decimals. We assume 6 for EURT.
+    const decimals = 6;
+    const amountToMint = amount * Math.pow(10, decimals);
 
-    const userAta = await getAssociatedTokenAddress(mint, userPubKey);
-    const accountInfo = await connection.getTokenAccountBalance(userAta);
+    console.log(
+      `[MINTING] Minting ${amount} EURT (which is ${amountToMint} in token units) to ATA...`,
+    );
 
-    return accountInfo.value.uiAmountString || "0";
-  } catch (error) {
+    // The `mintTo` helper function correctly constructs the `MintTo` instruction,
+    // internally using the official `TOKEN_PROGRAM_ID`. This is the core fix
+    // for the "IncorrectProgramId" error.
+    const transactionSignature = await mintTo(
+      connection,
+      minter, // Payer of the transaction fees
+      mintPublicKey, // The token mint
+      associatedTokenAccount.address, // The destination ATA
+      minter.publicKey, // The minting authority
+      amountToMint, // The amount to mint, adjusted for decimals
+    );
+
+    console.log(
+      `[MINTING] ✅ Mint successful! Transaction signature: ${transactionSignature}`,
+    );
+
+    return { transactionHash: transactionSignature };
+  } catch (error: any) {
     console.error(
-      `[BALANCE] Error fetching balance or account not initialized:`,
+      "[MINTING] ❌ An error occurred during the minting process:",
       error,
     );
-    return "0";
+    if (error.logs) {
+      console.error("[MINTING] Solana transaction logs:", error.logs);
+    }
+    throw new Error(`Failed to mint tokens: ${error.message}`);
   }
 }
