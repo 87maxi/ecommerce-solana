@@ -61,13 +61,13 @@ IDL_JSON=$(cat target/idl/solana_ecommerce.json)
 # --- 2. Create the EURT SPL Token Mint ---
 echo ""
 echo "🪙 Creating EURT SPL Token Mint..."
-# Using spl-token CLI with explicit commitment to avoid blockhash errors
-MINT_OUTPUT=$(spl-token create-token --decimals 6 --url $RPC_URL --fee-payer "$DEPLOYER_KEYPAIR" --commitment $COMMITMENT)
+# spl-token inherits commitment level from the global solana config
+MINT_OUTPUT=$(spl-token create-token --decimals 6 --url $RPC_URL --fee-payer "$DEPLOYER_KEYPAIR")
 EUROTOKEN_MINT_ADDRESS=$(echo "$MINT_OUTPUT" | awk '{print $3}')
 echo "📍 EURT Mint Address: $EUROTOKEN_MINT_ADDRESS"
 
 echo "Creating an account for the new EURT mint..."
-spl-token create-account "$EUROTOKEN_MINT_ADDRESS" --url $RPC_URL --fee-payer "$DEPLOYER_KEYPAIR" --commitment $COMMITMENT
+spl-token create-account "$EUROTOKEN_MINT_ADDRESS" --url $RPC_URL --fee-payer "$DEPLOYER_KEYPAIR"
 echo "✅ EURT token and account created."
 
 # --- 3. Configure Web-Customer (Port 3030) ---
