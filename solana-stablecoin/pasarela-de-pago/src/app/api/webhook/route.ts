@@ -15,10 +15,16 @@ export async function POST(request: NextRequest) {
     const sig = request.headers.get("stripe-signature");
     const payload = await request.text();
 
+    console.log(
+      "[WEBHOOK] Received headers:",
+      Object.fromEntries(request.headers.entries()),
+    );
     console.log("[WEBHOOK] Payload received, checking signature...");
 
     if (!sig) {
-      console.error("[WEBHOOK] Missing Stripe signature");
+      console.error(
+        "[WEBHOOK] ❌ Error: Missing Stripe signature. Ensure the webhook is configured correctly in the Stripe Dashboard.",
+      );
       return NextResponse.json(
         { error: "Missing Stripe signature" },
         { status: 400 },
@@ -28,19 +34,23 @@ export async function POST(request: NextRequest) {
     // Verificar la firma del webhook de Stripe
     let event;
     try {
-      event = stripe.webhooks.constructEvent(
-        payload,
-        sig,
-        process.env.STRIPE_WEBHOOK_SECRET!,
-      );
+      const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+      if (!webhookSecret) {
+        throw new Error("STRIPE_WEBHOOK_SECRET is not set in .env.local");
+      }
+      event = stripe.webhooks.constructEvent(payload, sig, webhookSecret);
       console.log(`[WEBHOOK] Signature verified. Event type: ${event.type}`);
     } catch (err: any) {
       console.error(
         "[WEBHOOK] Error verifying webhook signature:",
         err.message,
       );
+      console.error(
+        "[WEBHOOK] ❌ STRIPE_WEBHOOK_SECRET value:",
+        process.env.STRIPE_WEBHOOK_SECRET,
+      );
       return NextResponse.json(
-        { error: `Webhook Error: ${err.message}` },
+        { error: `Webhook signature verification failed: ${err.message}` },
         { status: 400 },
       );
     }
@@ -51,54 +61,33 @@ export async function POST(request: NextRequest) {
     if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object;
       const { walletAddress, invoice } = paymentIntent.metadata;
-      const amount = paymentIntent.amount / 100; // Convertir de céntimos a euros
+      const amount = paymentIntent.amount / 100;
 
-      console.log("[WEBHOOK] Payment succeeded event details:", {
+      console.log("[WEBHOOK] ✅ Payment succeeded event details:", {
         paymentIntentId: paymentIntent.id,
         walletAddress,
         amount,
         invoice,
       });
 
-      // Buscar la orden correspondiente por paymentIntentId primero
-      let orderToUpdate = orders.get(paymentIntent.id);
+      // Store transaction details in memory
+      const orderDetails = {
+        orderId: paymentIntent.id,
+        buyerAddress: walletAddress,
+        tokenAmount: amount,
+        invoice,
+        status: "processing",
+        txHash: null,
+        createdAt: new Date(),
+        completedAt: null,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000), // Expire in 5 mins
+      };
+      orders.set(paymentIntent.id, orderDetails);
       console.log(
-        `[WEBHOOK] Order lookup by paymentIntentId (${paymentIntent.id}): ${orderToUpdate ? "Found" : "Not found"}`,
+        `[WEBHOOK] Stored order details in memory for paymentIntentId: ${paymentIntent.id}`,
       );
 
-      // Fallback: buscar por invoice y wallet si no se encuentra por ID
-      if (!orderToUpdate) {
-        console.log(
-          "[WEBHOOK] Order not found by paymentIntentId, searching by invoice/wallet...",
-        );
-        for (const [orderId, order] of orders.entries()) {
-          if (
-            order.buyerAddress.toLowerCase() === walletAddress.toLowerCase() &&
-            order.invoice === invoice
-          ) {
-            orderToUpdate = order;
-            break;
-          }
-        }
-        console.log(
-          `[WEBHOOK] Order lookup by invoice/wallet: ${orderToUpdate ? "Found" : "Not found"}`,
-        );
-      }
-
-      if (!orderToUpdate) {
-        console.error("[WEBHOOK] No order found for payment:", {
-          paymentIntentId: paymentIntent.id,
-          walletAddress,
-          amount,
-          invoice,
-        });
-        return NextResponse.json({
-          received: true,
-          error: "Order not found",
-        });
-      }
-
-      console.log("[WEBHOOK] Order found for minting:", orderToUpdate.orderId);
+      console.log("[WEBHOOK] Order found for minting:", paymentIntent.id);
 
       // Llamar a la función local para mintear tokens
       console.log("[WEBHOOK] Calling local mintTokens function for Solana...");
@@ -114,16 +103,15 @@ export async function POST(request: NextRequest) {
         // Guardar transaction hash en metadata (opcional, para futuras referencias)
         const transactionHash = mintResult.transactionHash;
 
-        // Actualizar la orden con el hash de transacción y estado
+        // Update the order with transaction hash and completed status
+        const orderToUpdate = orders.get(paymentIntent.id);
         if (orderToUpdate) {
           orderToUpdate.status = "completed";
           orderToUpdate.txHash = transactionHash;
           orderToUpdate.completedAt = new Date();
-          orders.set(orderToUpdate.orderId, orderToUpdate);
+          orders.set(paymentIntent.id, orderToUpdate);
           console.log(
-            "[WEBHOOK] Order updated with transaction hash:",
-            orderToUpdate.orderId,
-            transactionHash,
+            `[WEBHOOK] ✅ Order ${paymentIntent.id} completed with txHash: ${transactionHash}`,
           );
         }
 
