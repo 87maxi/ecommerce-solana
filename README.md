@@ -35,6 +35,8 @@ Para entender en profundidad los desafíos técnicos y las soluciones aplicadas,
 
 ## 3. Guía de Inicialización y Despliegue Local
 
+Para una configuración paso a paso detallada, consulta nuestra [**Guía Completa de Instalación**](./docs/INSTALLATION_GUIDE.md).
+
 ### Paso 1: Iniciar la Red de Pruebas Local
 Inicia tu validador local de Surfpool en una terminal:
 ```bash
