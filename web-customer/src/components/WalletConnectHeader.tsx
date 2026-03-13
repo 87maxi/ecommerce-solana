@@ -22,9 +22,7 @@ export default function WalletConnectHeader() {
             : "",
         )}
       >
-        <WalletMultiButton>
-          {connected ? "Connected" : "Connect Wallet"}
-        </WalletMultiButton>
+        <WalletMultiButton />
       </div>
     </div>
   );
