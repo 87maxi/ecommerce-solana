@@ -1,1 +1,1649 @@
-{ "address": "5vC8pVqZguD8NB4qrrULXkXoN5ebfdsZLitYLmqpJAQj", "metadata": { "name": "solana_ecommerce", "version": "0.1.0", "spec": "0.1.0", "description": "Created with Anchor" }, "instructions": [ { "name": "activate_company", "docs": [ "Activates a company (only by admin or company owner)" ], "discriminator": [ 10, 135, 81, 35, 93, 168, 179, 72 ], "accounts": [ { "name": "global_state", "pda": { "seeds": [ { "kind": "const", "value": [ 103, 108, 111, 98, 97, 108, 45, 115, 116, 97, 116, 101 ] } ] } }, { "name": "company", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 99, 111, 109, 112, 97, 110, 121 ] }, { "kind": "account", "path": "company.id", "account": "Company" } ] } }, { "name": "owner", "signer": true } ], "args": [] }, { "name": "activate_product", "docs": [ "Activates a product" ], "discriminator": [ 234, 83, 15, 69, 167, 159, 25, 161 ], "accounts": [ { "name": "company", "pda": { "seeds": [ { "kind": "const", "value": [ 99, 111, 109, 112, 97, 110, 121 ] }, { "kind": "account", "path": "company.id", "account": "Company" } ] } }, { "name": "product", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 112, 114, 111, 100, 117, 99, 116 ] }, { "kind": "account", "path": "product.id", "account": "Product" } ] } }, { "name": "owner", "signer": true } ], "args": [] }, { "name": "add_product", "docs": [ "Adds a new product to a company" ], "discriminator": [ 0, 219, 137, 36, 105, 180, 164, 93 ], "accounts": [ { "name": "global_state", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 103, 108, 111, 98, 97, 108, 45, 115, 116, 97, 116, 101 ] } ] } }, { "name": "company", "pda": { "seeds": [ { "kind": "const", "value": [ 99, 111, 109, 112, 97, 110, 121 ] }, { "kind": "account", "path": "company.id", "account": "Company" } ] } }, { "name": "product", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 112, 114, 111, 100, 117, 99, 116 ] }, { "kind": "account", "path": "global_state.next_product_id", "account": "GlobalState" } ] } }, { "name": "owner", "writable": true, "signer": true }, { "name": "system_program", "address": "11111111111111111111111111111111" } ], "args": [ { "name": "name", "type": "string" }, { "name": "description", "type": "string" }, { "name": "price", "type": "u64" }, { "name": "image", "type": "string" }, { "name": "stock", "type": "u64" } ] }, { "name": "add_to_cart", "docs": [ "Adds an item to the user's shopping cart" ], "discriminator": [ 26, 59, 128, 236, 247, 119, 16, 238 ], "accounts": [ { "name": "cart", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 115, 104, 111, 112, 112, 105, 110, 103, 45, 99, 97, 114, 116 ] }, { "kind": "account", "path": "user" } ] } }, { "name": "user", "writable": true, "signer": true }, { "name": "system_program", "address": "11111111111111111111111111111111" } ], "args": [ { "name": "product_id", "type": "u64" }, { "name": "quantity", "type": "u64" } ] }, { "name": "clear_cart", "docs": [ "Clears all items from the shopping cart" ], "discriminator": [ 101, 112, 163, 241, 108, 83, 29, 82 ], "accounts": [ { "name": "cart", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 115, 104, 111, 112, 112, 105, 110, 103, 45, 99, 97, 114, 116 ] }, { "kind": "account", "path": "user" } ] } }, { "name": "user", "writable": true, "signer": true }, { "name": "system_program", "address": "11111111111111111111111111111111" } ], "args": [] }, { "name": "create_invoice", "docs": [ "Creates an invoice from the shopping cart" ], "discriminator": [ 154, 170, 31, 135, 134, 100, 156, 146 ], "accounts": [ { "name": "global_state", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 103, 108, 111, 98, 97, 108, 45, 115, 116, 97, 116, 101 ] } ] } }, { "name": "invoice", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 105, 110, 118, 111, 105, 99, 101 ] }, { "kind": "account", "path": "global_state.next_invoice_id", "account": "GlobalState" } ] } }, { "name": "cart", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 115, 104, 111, 112, 112, 105, 110, 103, 45, 99, 97, 114, 116 ] }, { "kind": "account", "path": "user" } ] } }, { "name": "user", "writable": true, "signer": true }, { "name": "system_program", "address": "11111111111111111111111111111111" } ], "args": [ { "name": "company_id", "type": "u64" }, { "name": "total_amount", "type": "u64" } ] }, { "name": "deactivate_company", "docs": [ "Deactivates a company (only by admin or company owner)" ], "discriminator": [ 202, 9, 113, 77, 210, 2, 171, 194 ], "accounts": [ { "name": "global_state", "pda": { "seeds": [ { "kind": "const", "value": [ 103, 108, 111, 98, 97, 108, 45, 115, 116, 97, 116, 101 ] } ] } }, { "name": "company", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 99, 111, 109, 112, 97, 110, 121 ] }, { "kind": "account", "path": "company.id", "account": "Company" } ] } }, { "name": "owner", "signer": true } ], "args": [] }, { "name": "deactivate_product", "docs": [ "Deactivates a product" ], "discriminator": [ 94, 118, 5, 80, 69, 37, 75, 96 ], "accounts": [ { "name": "company", "pda": { "seeds": [ { "kind": "const", "value": [ 99, 111, 109, 112, 97, 110, 121 ] }, { "kind": "account", "path": "company.id", "account": "Company" } ] } }, { "name": "product", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 112, 114, 111, 100, 117, 99, 116 ] }, { "kind": "account", "path": "product.id", "account": "Product" } ] } }, { "name": "owner", "signer": true } ], "args": [] }, { "name": "decrease_stock", "docs": [ "Decreases the stock level of a product" ], "discriminator": [ 178, 231, 95, 55, 189, 155, 211, 229 ], "accounts": [ { "name": "company", "pda": { "seeds": [ { "kind": "const", "value": [ 99, 111, 109, 112, 97, 110, 121 ] }, { "kind": "account", "path": "company.id", "account": "Company" } ] } }, { "name": "product", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 112, 114, 111, 100, 117, 99, 116 ] }, { "kind": "account", "path": "product.id", "account": "Product" } ] } }, { "name": "owner", "signer": true } ], "args": [ { "name": "quantity", "type": "u64" } ] }, { "name": "initialize", "docs": [ "Initializes the global state of the ecommerce platform" ], "discriminator": [ 175, 175, 109, 31, 13, 152, 155, 237 ], "accounts": [ { "name": "global_state", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 103, 108, 111, 98, 97, 108, 45, 115, 116, 97, 116, 101 ] } ] } }, { "name": "admin", "writable": true, "signer": true }, { "name": "system_program", "address": "11111111111111111111111111111111" } ], "args": [] }, { "name": "process_payment", "docs": [ "Processes a payment for an invoice" ], "discriminator": [ 189, 81, 30, 198, 139, 186, 115, 23 ], "accounts": [ { "name": "invoice", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 105, 110, 118, 111, 105, 99, 101 ] }, { "kind": "account", "path": "invoice.invoice_id", "account": "Invoice" } ] } }, { "name": "customer", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 99, 117, 115, 116, 111, 109, 101, 114 ] }, { "kind": "account", "path": "invoice.customer_address", "account": "Invoice" } ] } }, { "name": "authority", "writable": true, "signer": true } ], "args": [ { "name": "payment_tx_hash", "type": "string" } ] }, { "name": "register_company", "docs": [ "Registers a new company on the platform" ], "discriminator": [ 109, 51, 247, 199, 229, 252, 157, 222 ], "accounts": [ { "name": "global_state", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 103, 108, 111, 98, 97, 108, 45, 115, 116, 97, 116, 101 ] } ] } }, { "name": "company", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 99, 111, 109, 112, 97, 110, 121 ] }, { "kind": "account", "path": "global_state.next_company_id", "account": "GlobalState" } ] } }, { "name": "owner", "writable": true, "signer": true }, { "name": "system_program", "address": "11111111111111111111111111111111" } ], "args": [ { "name": "name", "type": "string" }, { "name": "description", "type": "string" } ] }, { "name": "register_customer", "docs": [ "Registers a new customer" ], "discriminator": [ 211, 203, 193, 164, 198, 246, 27, 223 ], "accounts": [ { "name": "customer", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 99, 117, 115, 116, 111, 109, 101, 114 ] }, { "kind": "account", "path": "user" } ] } }, { "name": "user", "writable": true, "signer": true }, { "name": "system_program", "address": "11111111111111111111111111111111" } ], "args": [] }, { "name": "remove_from_cart", "docs": [ "Removes an item from the shopping cart" ], "discriminator": [ 138, 201, 131, 54, 19, 196, 209, 39 ], "accounts": [ { "name": "cart", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 115, 104, 111, 112, 112, 105, 110, 103, 45, 99, 97, 114, 116 ] }, { "kind": "account", "path": "user" } ] } }, { "name": "user", "writable": true, "signer": true }, { "name": "system_program", "address": "11111111111111111111111111111111" } ], "args": [ { "name": "product_id", "type": "u64" } ] }, { "name": "update_quantity", "docs": [ "Updates the quantity of an item in the cart" ], "discriminator": [ 102, 231, 157, 1, 64, 242, 32, 0 ], "accounts": [ { "name": "cart", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 115, 104, 111, 112, 112, 105, 110, 103, 45, 99, 97, 114, 116 ] }, { "kind": "account", "path": "user" } ] } }, { "name": "user", "writable": true, "signer": true }, { "name": "system_program", "address": "11111111111111111111111111111111" } ], "args": [ { "name": "product_id", "type": "u64" }, { "name": "quantity", "type": "u64" } ] }, { "name": "update_stock", "docs": [ "Updates the stock level of a product" ], "discriminator": [ 221, 254, 83, 160, 195, 239, 6, 95 ], "accounts": [ { "name": "company", "pda": { "seeds": [ { "kind": "const", "value": [ 99, 111, 109, 112, 97, 110, 121 ] }, { "kind": "account", "path": "company.id", "account": "Company" } ] } }, { "name": "product", "writable": true, "pda": { "seeds": [ { "kind": "const", "value": [ 112, 114, 111, 100, 117, 99, 116 ] }, { "kind": "account", "path": "product.id", "account": "Product" } ] } }, { "name": "owner", "signer": true } ], "args": [ { "name": "new_stock", "type": "u64" } ] } ], "accounts": [ { "name": "Company", "discriminator": [ 32, 212, 52, 137, 90, 7, 206, 183 ] }, { "name": "Customer", "discriminator": [ 112, 147, 140, 31, 93, 186, 103, 18 ] }, { "name": "GlobalState", "discriminator": [ 163, 46, 74, 168, 216, 123, 133, 98 ] }, { "name": "Invoice", "discriminator": [ 51, 194, 250, 114, 6, 104, 18, 164 ] }, { "name": "Product", "discriminator": [ 102, 76, 55, 251, 38, 73, 224, 229 ] }, { "name": "ShoppingCart", "discriminator": [ 101, 118, 242, 143, 204, 208, 73, 250 ] } ], "errors": [ { "code": 6000, "name": "Unauthorized", "msg": "You are not authorized to perform this action." }, { "code": 6001, "name": "CompanyAlreadyExists", "msg": "Company already exists for this owner." }, { "code": 6002, "name": "CompanyInactive", "msg": "Company is not active." }, { "code": 6003, "name": "CompanyAlreadyInactive", "msg": "Company is already inactive." }, { "code": 6004, "name": "CompanyNotFound", "msg": "Company does not exist." }, { "code": 6005, "name": "ProductNotFound", "msg": "Product does not exist." }, { "code": 6006, "name": "InsufficientStock", "msg": "Insufficient stock for the requested product." }, { "code": 6007, "name": "ProductAlreadyInactive", "msg": "Product is already inactive." }, { "code": 6008, "name": "ProductAlreadyActive", "msg": "Product is already active." }, { "code": 6009, "name": "CustomerAlreadyRegistered", "msg": "Customer is already registered." }, { "code": 6010, "name": "CustomerNotRegistered", "msg": "Customer is not registered." }, { "code": 6011, "name": "CartEmpty", "msg": "Cart is empty." }, { "code": 6012, "name": "ItemNotInCart", "msg": "Item not found in cart." }, { "code": 6013, "name": "InvalidQuantity", "msg": "Invalid quantity provided." }, { "code": 6014, "name": "ArrayLengthMismatch", "msg": "Array length mismatch." }, { "code": 6015, "name": "InvoiceAlreadyPaid", "msg": "Invoice already paid." }, { "code": 6016, "name": "InvoiceNotFound", "msg": "Invoice not found." }, { "code": 6017, "name": "Overflow", "msg": "Numerical overflow occurred." } ], "types": [ { "name": "CartItem", "type": { "kind": "struct", "fields": [ { "name": "product_id", "type": "u64" }, { "name": "quantity", "type": "u64" } ] } }, { "name": "Company", "type": { "kind": "struct", "fields": [ { "name": "id", "type": "u64" }, { "name": "owner", "type": "pubkey" }, { "name": "name", "type": "string" }, { "name": "description", "type": "string" }, { "name": "is_active", "type": "bool" }, { "name": "created_at", "type": "i64" } ] } }, { "name": "Customer", "type": { "kind": "struct", "fields": [ { "name": "address", "type": "pubkey" }, { "name": "total_purchases", "type": "u64" }, { "name": "total_spent", "type": "u64" }, { "name": "created_at", "type": "i64" }, { "name": "is_registered", "type": "bool" } ] } }, { "name": "GlobalState", "type": { "kind": "struct", "fields": [ { "name": "owner", "type": "pubkey" }, { "name": "next_company_id", "type": "u64" }, { "name": "next_product_id", "type": "u64" }, { "name": "next_invoice_id", "type": "u64" } ] } }, { "name": "Invoice", "type": { "kind": "struct", "fields": [ { "name": "invoice_id", "type": "u64" }, { "name": "company_id", "type": "u64" }, { "name": "customer_address", "type": "pubkey" }, { "name": "total_amount", "type": "u64" }, { "name": "timestamp", "type": "i64" }, { "name": "status", "type": { "defined": { "name": "PaymentStatus" } } }, { "name": "payment_tx_hash", "type": "string" } ] } }, { "name": "PaymentStatus", "type": { "kind": "enum", "variants": [ { "name": "Pending" }, { "name": "Paid" }, { "name": "Failed" }, { "name": "Refunded" } ] } }, { "name": "Product", "type": { "kind": "struct", "fields": [ { "name": "id", "type": "u64" }, { "name": "company_id", "type": "u64" }, { "name": "name", "type": "string" }, { "name": "description", "type": "string" }, { "name": "price", "type": "u64" }, { "name": "stock", "type": "u64" }, { "name": "image", "type": "string" }, { "name": "is_active", "type": "bool" } ] } }, { "name": "ShoppingCart", "type": { "kind": "struct", "fields": [ { "name": "customer", "type": "pubkey" }, { "name": "items", "type": { "vec": { "defined": { "name": "CartItem" } } } } ] } } ], "constants": [ { "name": "CART_SEED", "type": "bytes", "value": "[115, 104, 111, 112, 112, 105, 110, 103, 45, 99, 97, 114, 116]" }, { "name": "COMPANY_SEED", "type": "bytes", "value": "[99, 111, 109, 112, 97, 110, 121]" }, { "name": "CUSTOMER_SEED", "type": "bytes", "value": "[99, 117, 115, 116, 111, 109, 101, 114]" }, { "name": "GLOBAL_STATE_SEED", "type": "bytes", "value": "[103, 108, 111, 98, 97, 108, 45, 115, 116, 97, 116, 101]" }, { "name": "INVOICE_SEED", "type": "bytes", "value": "[105, 110, 118, 111, 105, 99, 101]" }, { "name": "PRODUCT_SEED", "type": "bytes", "value": "[112, 114, 111, 100, 117, 99, 116]" } ] }
+{
+  "address": "5vC8pVqZguD8NB4qrrULXkXoN5ebfdsZLitYLmqpJAQj",
+  "metadata": {
+    "name": "solana_ecommerce",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "activate_company",
+      "docs": [
+        "Activates a company (only by admin or company owner)"
+      ],
+      "discriminator": [
+        10,
+        135,
+        81,
+        35,
+        93,
+        168,
+        179,
+        72
+      ],
+      "accounts": [
+        {
+          "name": "global_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  108,
+                  111,
+                  98,
+                  97,
+                  108,
+                  45,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "company",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  97,
+                  110,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "company.id",
+                "account": "Company"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "activate_product",
+      "docs": [
+        "Activates a product"
+      ],
+      "discriminator": [
+        234,
+        83,
+        15,
+        69,
+        167,
+        159,
+        25,
+        161
+      ],
+      "accounts": [
+        {
+          "name": "company",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  97,
+                  110,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "company.id",
+                "account": "Company"
+              }
+            ]
+          }
+        },
+        {
+          "name": "product",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  100,
+                  117,
+                  99,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "product.id",
+                "account": "Product"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "add_product",
+      "docs": [
+        "Adds a new product to a company"
+      ],
+      "discriminator": [
+        0,
+        219,
+        137,
+        36,
+        105,
+        180,
+        164,
+        93
+      ],
+      "accounts": [
+        {
+          "name": "global_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  108,
+                  111,
+                  98,
+                  97,
+                  108,
+                  45,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "company",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  97,
+                  110,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "company.id",
+                "account": "Company"
+              }
+            ]
+          }
+        },
+        {
+          "name": "product",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  100,
+                  117,
+                  99,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "global_state.next_product_id",
+                "account": "GlobalState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "price",
+          "type": "u64"
+        },
+        {
+          "name": "image",
+          "type": "string"
+        },
+        {
+          "name": "stock",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "add_to_cart",
+      "docs": [
+        "Adds an item to the user's shopping cart"
+      ],
+      "discriminator": [
+        26,
+        59,
+        128,
+        236,
+        247,
+        119,
+        16,
+        238
+      ],
+      "accounts": [
+        {
+          "name": "cart",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  104,
+                  111,
+                  112,
+                  112,
+                  105,
+                  110,
+                  103,
+                  45,
+                  99,
+                  97,
+                  114,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "product_id",
+          "type": "u64"
+        },
+        {
+          "name": "quantity",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "clear_cart",
+      "docs": [
+        "Clears all items from the shopping cart"
+      ],
+      "discriminator": [
+        101,
+        112,
+        163,
+        241,
+        108,
+        83,
+        29,
+        82
+      ],
+      "accounts": [
+        {
+          "name": "cart",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  104,
+                  111,
+                  112,
+                  112,
+                  105,
+                  110,
+                  103,
+                  45,
+                  99,
+                  97,
+                  114,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_invoice",
+      "docs": [
+        "Creates an invoice from the shopping cart"
+      ],
+      "discriminator": [
+        154,
+        170,
+        31,
+        135,
+        134,
+        100,
+        156,
+        146
+      ],
+      "accounts": [
+        {
+          "name": "global_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  108,
+                  111,
+                  98,
+                  97,
+                  108,
+                  45,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "invoice",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  118,
+                  111,
+                  105,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "global_state.next_invoice_id",
+                "account": "GlobalState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "cart",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  104,
+                  111,
+                  112,
+                  112,
+                  105,
+                  110,
+                  103,
+                  45,
+                  99,
+                  97,
+                  114,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "company_id",
+          "type": "u64"
+        },
+        {
+          "name": "total_amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "deactivate_company",
+      "docs": [
+        "Deactivates a company (only by admin or company owner)"
+      ],
+      "discriminator": [
+        202,
+        9,
+        113,
+        77,
+        210,
+        2,
+        171,
+        194
+      ],
+      "accounts": [
+        {
+          "name": "global_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  108,
+                  111,
+                  98,
+                  97,
+                  108,
+                  45,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "company",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  97,
+                  110,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "company.id",
+                "account": "Company"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "deactivate_product",
+      "docs": [
+        "Deactivates a product"
+      ],
+      "discriminator": [
+        94,
+        118,
+        5,
+        80,
+        69,
+        37,
+        75,
+        96
+      ],
+      "accounts": [
+        {
+          "name": "company",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  97,
+                  110,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "company.id",
+                "account": "Company"
+              }
+            ]
+          }
+        },
+        {
+          "name": "product",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  100,
+                  117,
+                  99,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "product.id",
+                "account": "Product"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "decrease_stock",
+      "docs": [
+        "Decreases the stock level of a product"
+      ],
+      "discriminator": [
+        178,
+        231,
+        95,
+        55,
+        189,
+        155,
+        211,
+        229
+      ],
+      "accounts": [
+        {
+          "name": "company",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  97,
+                  110,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "company.id",
+                "account": "Company"
+              }
+            ]
+          }
+        },
+        {
+          "name": "product",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  100,
+                  117,
+                  99,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "product.id",
+                "account": "Product"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "quantity",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initialize",
+      "docs": [
+        "Initializes the global state of the ecommerce platform"
+      ],
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "global_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  108,
+                  111,
+                  98,
+                  97,
+                  108,
+                  45,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "process_payment",
+      "docs": [
+        "Processes a payment for an invoice"
+      ],
+      "discriminator": [
+        189,
+        81,
+        30,
+        198,
+        139,
+        186,
+        115,
+        23
+      ],
+      "accounts": [
+        {
+          "name": "invoice",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  118,
+                  111,
+                  105,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "invoice.invoice_id",
+                "account": "Invoice"
+              }
+            ]
+          }
+        },
+        {
+          "name": "customer",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  117,
+                  115,
+                  116,
+                  111,
+                  109,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "invoice.customer_address",
+                "account": "Invoice"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "payment_tx_hash",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "register_company",
+      "docs": [
+        "Registers a new company on the platform"
+      ],
+      "discriminator": [
+        109,
+        51,
+        247,
+        199,
+        229,
+        252,
+        157,
+        222
+      ],
+      "accounts": [
+        {
+          "name": "global_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  108,
+                  111,
+                  98,
+                  97,
+                  108,
+                  45,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "company",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  97,
+                  110,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "global_state.next_company_id",
+                "account": "GlobalState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "register_customer",
+      "docs": [
+        "Registers a new customer"
+      ],
+      "discriminator": [
+        211,
+        203,
+        193,
+        164,
+        198,
+        246,
+        27,
+        223
+      ],
+      "accounts": [
+        {
+          "name": "customer",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  117,
+                  115,
+                  116,
+                  111,
+                  109,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "remove_from_cart",
+      "docs": [
+        "Removes an item from the shopping cart"
+      ],
+      "discriminator": [
+        138,
+        201,
+        131,
+        54,
+        19,
+        196,
+        209,
+        39
+      ],
+      "accounts": [
+        {
+          "name": "cart",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  104,
+                  111,
+                  112,
+                  112,
+                  105,
+                  110,
+                  103,
+                  45,
+                  99,
+                  97,
+                  114,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "product_id",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "update_quantity",
+      "docs": [
+        "Updates the quantity of an item in the cart"
+      ],
+      "discriminator": [
+        102,
+        231,
+        157,
+        1,
+        64,
+        242,
+        32,
+        0
+      ],
+      "accounts": [
+        {
+          "name": "cart",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  104,
+                  111,
+                  112,
+                  112,
+                  105,
+                  110,
+                  103,
+                  45,
+                  99,
+                  97,
+                  114,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "product_id",
+          "type": "u64"
+        },
+        {
+          "name": "quantity",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "update_stock",
+      "docs": [
+        "Updates the stock level of a product"
+      ],
+      "discriminator": [
+        221,
+        254,
+        83,
+        160,
+        195,
+        239,
+        6,
+        95
+      ],
+      "accounts": [
+        {
+          "name": "company",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  97,
+                  110,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "company.id",
+                "account": "Company"
+              }
+            ]
+          }
+        },
+        {
+          "name": "product",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  100,
+                  117,
+                  99,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "product.id",
+                "account": "Product"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "new_stock",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Company",
+      "discriminator": [
+        32,
+        212,
+        52,
+        137,
+        90,
+        7,
+        206,
+        183
+      ]
+    },
+    {
+      "name": "Customer",
+      "discriminator": [
+        112,
+        147,
+        140,
+        31,
+        93,
+        186,
+        103,
+        18
+      ]
+    },
+    {
+      "name": "GlobalState",
+      "discriminator": [
+        163,
+        46,
+        74,
+        168,
+        216,
+        123,
+        133,
+        98
+      ]
+    },
+    {
+      "name": "Invoice",
+      "discriminator": [
+        51,
+        194,
+        250,
+        114,
+        6,
+        104,
+        18,
+        164
+      ]
+    },
+    {
+      "name": "Product",
+      "discriminator": [
+        102,
+        76,
+        55,
+        251,
+        38,
+        73,
+        224,
+        229
+      ]
+    },
+    {
+      "name": "ShoppingCart",
+      "discriminator": [
+        101,
+        118,
+        242,
+        143,
+        204,
+        208,
+        73,
+        250
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "You are not authorized to perform this action."
+    },
+    {
+      "code": 6001,
+      "name": "CompanyAlreadyExists",
+      "msg": "Company already exists for this owner."
+    },
+    {
+      "code": 6002,
+      "name": "CompanyInactive",
+      "msg": "Company is not active."
+    },
+    {
+      "code": 6003,
+      "name": "CompanyAlreadyInactive",
+      "msg": "Company is already inactive."
+    },
+    {
+      "code": 6004,
+      "name": "CompanyNotFound",
+      "msg": "Company does not exist."
+    },
+    {
+      "code": 6005,
+      "name": "ProductNotFound",
+      "msg": "Product does not exist."
+    },
+    {
+      "code": 6006,
+      "name": "InsufficientStock",
+      "msg": "Insufficient stock for the requested product."
+    },
+    {
+      "code": 6007,
+      "name": "ProductAlreadyInactive",
+      "msg": "Product is already inactive."
+    },
+    {
+      "code": 6008,
+      "name": "ProductAlreadyActive",
+      "msg": "Product is already active."
+    },
+    {
+      "code": 6009,
+      "name": "CustomerAlreadyRegistered",
+      "msg": "Customer is already registered."
+    },
+    {
+      "code": 6010,
+      "name": "CustomerNotRegistered",
+      "msg": "Customer is not registered."
+    },
+    {
+      "code": 6011,
+      "name": "CartEmpty",
+      "msg": "Cart is empty."
+    },
+    {
+      "code": 6012,
+      "name": "ItemNotInCart",
+      "msg": "Item not found in cart."
+    },
+    {
+      "code": 6013,
+      "name": "InvalidQuantity",
+      "msg": "Invalid quantity provided."
+    },
+    {
+      "code": 6014,
+      "name": "ArrayLengthMismatch",
+      "msg": "Array length mismatch."
+    },
+    {
+      "code": 6015,
+      "name": "InvoiceAlreadyPaid",
+      "msg": "Invoice already paid."
+    },
+    {
+      "code": 6016,
+      "name": "InvoiceNotFound",
+      "msg": "Invoice not found."
+    },
+    {
+      "code": 6017,
+      "name": "Overflow",
+      "msg": "Numerical overflow occurred."
+    }
+  ],
+  "types": [
+    {
+      "name": "CartItem",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "product_id",
+            "type": "u64"
+          },
+          {
+            "name": "quantity",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Company",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "u64"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "is_active",
+            "type": "bool"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Customer",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "address",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_purchases",
+            "type": "u64"
+          },
+          {
+            "name": "total_spent",
+            "type": "u64"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "is_registered",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GlobalState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "next_company_id",
+            "type": "u64"
+          },
+          {
+            "name": "next_product_id",
+            "type": "u64"
+          },
+          {
+            "name": "next_invoice_id",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Invoice",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "invoice_id",
+            "type": "u64"
+          },
+          {
+            "name": "company_id",
+            "type": "u64"
+          },
+          {
+            "name": "customer_address",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_amount",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "PaymentStatus"
+              }
+            }
+          },
+          {
+            "name": "payment_tx_hash",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PaymentStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Pending"
+          },
+          {
+            "name": "Paid"
+          },
+          {
+            "name": "Failed"
+          },
+          {
+            "name": "Refunded"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Product",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "u64"
+          },
+          {
+            "name": "company_id",
+            "type": "u64"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "stock",
+            "type": "u64"
+          },
+          {
+            "name": "image",
+            "type": "string"
+          },
+          {
+            "name": "is_active",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ShoppingCart",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "customer",
+            "type": "pubkey"
+          },
+          {
+            "name": "items",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "CartItem"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "constants": [
+    {
+      "name": "CART_SEED",
+      "type": "bytes",
+      "value": "[115, 104, 111, 112, 112, 105, 110, 103, 45, 99, 97, 114, 116]"
+    },
+    {
+      "name": "COMPANY_SEED",
+      "type": "bytes",
+      "value": "[99, 111, 109, 112, 97, 110, 121]"
+    },
+    {
+      "name": "CUSTOMER_SEED",
+      "type": "bytes",
+      "value": "[99, 117, 115, 116, 111, 109, 101, 114]"
+    },
+    {
+      "name": "GLOBAL_STATE_SEED",
+      "type": "bytes",
+      "value": "[103, 108, 111, 98, 97, 108, 45, 115, 116, 97, 116, 101]"
+    },
+    {
+      "name": "INVOICE_SEED",
+      "type": "bytes",
+      "value": "[105, 110, 118, 111, 105, 99, 101]"
+    },
+    {
+      "name": "PRODUCT_SEED",
+      "type": "bytes",
+      "value": "[112, 114, 111, 100, 117, 99, 116]"
+    }
+  ]
+}

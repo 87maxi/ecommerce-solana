@@ -41,7 +41,6 @@ ECOMMERCE_PROGRAM_ADDRESS=$(solana-keygen pubkey "$PROGRAM_KEYPAIR_PATH")
 echo "📍 E-Commerce Program ID: $ECOMMERCE_PROGRAM_ADDRESS"
 
 echo "Deploying program binary to localnet... (This may take a moment)"
-# Using solana program deploy directly for more control and stability
 solana program deploy \
     --url $RPC_URL \
     --keypair "$DEPLOYER_KEYPAIR" \
@@ -61,7 +60,6 @@ IDL_JSON=$(cat target/idl/solana_ecommerce.json)
 # --- 2. Create the EURT SPL Token Mint ---
 echo ""
 echo "🪙 Creating EURT SPL Token Mint..."
-# spl-token inherits commitment level from the global solana config
 MINT_OUTPUT=$(spl-token create-token --decimals 6 --url $RPC_URL --fee-payer "$DEPLOYER_KEYPAIR")
 EUROTOKEN_MINT_ADDRESS=$(echo "$MINT_OUTPUT" | awk '{print $3}')
 echo "📍 EURT Mint Address: $EUROTOKEN_MINT_ADDRESS"
@@ -109,7 +107,6 @@ cd "$ROOT/solana-stablecoin/compra-stablecoin"
 cat > .env.local << EOF
 $STRIPE_PK
 $STRIPE_SK
-STRIPE_WEBHOOK_SECRET=whsec_... # Replace with your `stripe listen` secret
 NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS=$EUROTOKEN_MINT_ADDRESS
 NEXT_PUBLIC_SITE_URL=http://localhost:3033
 NEXT_PUBLIC_PASARELA_PAGO_URL=http://localhost:3034
@@ -126,7 +123,6 @@ cd "$ROOT/solana-stablecoin/pasarela-de-pago"
 cat > .env.local << EOF
 $STRIPE_PK
 $STRIPE_SK
-STRIPE_WEBHOOK_SECRET=whsec_... # Replace with your `stripe listen` secret
 NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS=$EUROTOKEN_MINT_ADDRESS
 OWNER_PRIVATE_KEY='$(cat "$DEPLOYER_KEYPAIR")'
 RPC_URL=$RPC_URL
@@ -153,5 +149,5 @@ echo " - Web Admin:    http://localhost:3032"
 echo " - Stablecoin:   http://localhost:3033"
 echo " - Pasarela:     http://localhost:3034"
 echo ""
-echo "⚠️  ACTION REQUIRED: Copy the webhook secret from 'stripe listen' into the .env.local files for 'compra-stablecoin' and 'pasarela-de-pago'."
+echo "⚠️  ACTION REQUIRED: Copy the webhook secret from \'stripe listen --forward-to localhost:3034/api/webhook\' into the STRIPE_WEBHOOK_SECRET variable in the .env.local files for \'compra-stablecoin\' and \'pasarela-de-pago\'. You will get a new secret every time you run \'stripe listen\'."
 echo "⚠️  Remember to restart your Next.js servers to apply the new .env.local changes!"
