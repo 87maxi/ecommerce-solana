@@ -5,11 +5,17 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useTheme } from './ThemeProvider';
 import { RoleIndicator } from './RoleIndicator';
 import { useState } from 'react';
+import { useIsMounted } from '../hooks/useIsMounted';
 
 export function Header() {
+  const isMounted = useIsMounted();
   const { connected } = useWallet();
   const { theme, toggleTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Evitamos errores de hidratación asegurándonos de que el contenido
+  // que depende del estado del cliente (wallet) solo se renderice tras el montaje.
+  const showConnectedContent = isMounted && connected;
 
   return (
     <header className="bg-slate-900/95 backdrop-blur-md shadow-lg border-b border-cyan-500/20 fixed w-full z-10">
@@ -26,7 +32,7 @@ export function Header() {
             </Link>
           </div>
 
-          {connected && (
+          {showConnectedContent && (
             <div className="hidden md:flex items-center space-x-4">
               <RoleIndicator />
               <div className="h-6 w-px bg-slate-700/50 mx-2"></div>
@@ -35,7 +41,7 @@ export function Header() {
 
           {/* Mobile menu button */}
           <div className="flex md:hidden items-center space-x-4">
-            {connected && <RoleIndicator />}
+            {showConnectedContent && <RoleIndicator />}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="text-slate-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-cyan-500 rounded-md p-1 transition-colors"

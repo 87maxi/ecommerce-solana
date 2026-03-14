@@ -10,36 +10,41 @@ import { cn } from "@/lib/utils";
 import { EuroTokenBalance } from "@/components/EuroTokenBalance";
 import { AppWalletProvider } from "@/components/AppWalletProvider";
 import { BuyEuroTokenButton } from "@/components/BuyEuroTokenButton";
+import { useIsMounted } from "@/hooks/useIsMounted";
 
 function MainLayout({ children }: { children: React.ReactNode }) {
+  const isMounted = useIsMounted();
   const [cartItemCount, setCartItemCount] = useState(0);
   const { getCartItemCount, contract } = useContract();
 
   useEffect(() => {
-    let isMounted = true;
+    let active = true;
 
     const fetchCartCount = async () => {
       // Only fetch cart count if contract is initialized (wallet connected)
       if (!contract) {
-        if (isMounted) setCartItemCount(0);
+        if (active) setCartItemCount(0);
         return;
       }
 
       try {
         const count = await getCartItemCount();
-        if (isMounted) setCartItemCount(count);
+        if (active) setCartItemCount(count);
       } catch (error) {
         console.error("Error fetching cart count:", error);
-        if (isMounted) setCartItemCount(0);
+        if (active) setCartItemCount(0);
       }
     };
 
-    fetchCartCount();
+    if (isMounted) {
+      fetchCartCount();
+    }
 
     return () => {
-      isMounted = false;
+      active = false;
     };
-  }, [getCartItemCount, contract]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMounted, !!contract]);
 
   return (
     <>
@@ -78,7 +83,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                 >
                   <div className="relative">
                     <ShoppingCart className="w-4 h-4" />
-                    {cartItemCount > 0 && (
+                    {isMounted && cartItemCount > 0 && (
                       <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-primary text-[10px] text-primary-foreground flex items-center justify-center rounded-full ring-2 ring-background">
                         {cartItemCount}
                       </span>
@@ -101,18 +106,23 @@ function MainLayout({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="hidden md:block">
-                <EuroTokenBalance />
-              </div>
-              <BuyEuroTokenButton
-                redirectUrl={
-                  process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3030"
-                }
-                className="hidden md:flex"
-              />
-              <div className="h-6 w-px bg-border/50 hidden md:block" />
-              <WalletConnectHeader />
-              <MobileMenu cartItemCount={cartItemCount} />
+              {isMounted && (
+                <>
+                  <div className="hidden md:block">
+                    <EuroTokenBalance />
+                  </div>
+                  <BuyEuroTokenButton
+                    redirectUrl={
+                      process.env.NEXT_PUBLIC_SITE_URL ||
+                      "http://localhost:3030"
+                    }
+                    className="hidden md:flex"
+                  />
+                  <div className="h-6 w-px bg-border/50 hidden md:block" />
+                  <WalletConnectHeader />
+                  <MobileMenu cartItemCount={cartItemCount} />
+                </>
+              )}
             </div>
           </div>
         </div>

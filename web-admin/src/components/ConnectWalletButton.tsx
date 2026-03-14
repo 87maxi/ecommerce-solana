@@ -2,9 +2,15 @@
 
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { useIsMounted } from '../hooks/useIsMounted';
 
 export function ConnectWalletButton() {
+  const isMounted = useIsMounted();
   const { connected } = useWallet();
+
+  if (!isMounted) {
+    return <div className="w-full h-12 bg-slate-800/50 rounded-xl animate-pulse"></div>;
+  }
 
   return (
     <div className="w-full flex flex-col items-center justify-center space-y-4">

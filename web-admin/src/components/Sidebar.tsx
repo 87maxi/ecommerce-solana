@@ -8,18 +8,19 @@ import { ConnectWalletButton } from './ConnectWalletButton';
 import { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useRole } from '../contexts/RoleContext';
-
-// Importación de estilos usando sintaxis ESM para mejor compatibilidad con Turbopack
-import '@solana/wallet-adapter-react-ui/styles.css';
+import { useIsMounted } from '../hooks/useIsMounted';
 
 export function Sidebar() {
+  const isMounted = useIsMounted();
   const pathname = usePathname();
   const { connected } = useWallet();
   const { roleInfo } = useRole();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Vista de conexión cuando la wallet no está vinculada
-  if (!connected) {
+  // Durante el SSR y el primer renderizado en el cliente, isMounted será false.
+  // Renderizamos el estado de desconexión para que coincida con lo que generó el servidor
+  // y evitar errores de hidratación.
+  if (!isMounted || !connected) {
     return (
       <div className="hidden md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 sidebar-gradient border-r border-cyan-500/20">
         <div className="flex flex-col flex-grow justify-center items-center p-8">

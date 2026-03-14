@@ -9,8 +9,7 @@ import { BackpackWalletAdapter } from '@solana/wallet-adapter-backpack';
 import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
 import { clusterApiUrl } from '@solana/web3.js';
 
-// Importación de estilos usando sintaxis ESM para mejor compatibilidad con Turbopack
-import '@solana/wallet-adapter-react-ui/styles.css';
+// Los estilos se han movido a layout.tsx para evitar problemas de renderizado
 
 /**
  * Proveedor global de Wallet de Solana para el panel de administración.

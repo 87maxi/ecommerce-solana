@@ -6,6 +6,7 @@ import { ThemeProvider } from '../components/ThemeProvider';
 import { RoleProvider } from '../contexts/RoleContext';
 import { AppWalletProvider } from './providers';
 import './globals.css';
+import '@solana/wallet-adapter-react-ui/styles.css';
 import { Sidebar } from '../components/Sidebar';
 
 export default function RootLayout({ children }: { children: ReactNode }) {
