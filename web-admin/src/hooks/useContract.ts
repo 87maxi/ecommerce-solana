@@ -21,8 +21,6 @@ export function useContract(
       // Create the Anchor Provider using the Connection and Wallet
       const anchorProvider = new AnchorProvider(provider, signer, AnchorProvider.defaultOptions());
 
-      setProvider(anchorProvider);
-
       // We still use getContractAddress, but it should now return a base58 Program ID
       const addressStr = getContractAddress(chainId || 1337, contractName);
       if (!addressStr) {

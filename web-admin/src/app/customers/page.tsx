@@ -1,16 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 
 import { useContract } from '../../hooks/useContract';
-import { useWallet } from '../../hooks/useWallet';
 import { formatAddress, formatDate } from '../../lib/utils';
 import { Customer } from '../../types';
 
 export default function CustomersPage() {
-  const { isConnected, provider, signer, chainId } = useWallet();
-  const ecommerceContract = useContract('Ecommerce', provider, signer, chainId);
+  const { publicKey, connected } = useWallet();
+  const { connection } = useConnection();
+
+  const signer = useMemo(() => (publicKey ? { publicKey } : null), [publicKey]);
+  const ecommerceContract = useContract('Ecommerce', connection, signer, null);
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,16 +39,13 @@ export default function CustomersPage() {
     loadCustomers();
   }, [ecommerceContract]);
 
-  if (!isConnected) {
+  if (!connected) {
     return (
       <div className="min-h-screen bg-slate-900 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-3xl font-bold text-slate-200">
-            Acceso Restringido
-          </h1>
+          <h1 className="text-3xl font-bold text-slate-200">Acceso Restringido</h1>
           <p className="mt-4 text-lg text-slate-400">
-            Por favor, conecta tu billetera para acceder al panel de
-            administración.
+            Por favor, conecta tu billetera para acceder al panel de administración.
           </p>
           <div className="mt-8">
             <Link
@@ -64,12 +64,9 @@ export default function CustomersPage() {
     <div className="min-h-screen bg-slate-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-200">
-            Gestión de Clientes
-          </h1>
+          <h1 className="text-3xl font-bold text-slate-200">Gestión de Clientes</h1>
           <p className="mt-2 text-sm text-slate-300">
-            Gestiona todos los clientes registrados en el e-commerce
-            descentralizado.
+            Gestiona todos los clientes registrados en el e-commerce descentralizado.
           </p>
         </div>
 
@@ -117,19 +114,13 @@ export default function CustomersPage() {
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <h3 className="font-medium text-slate-200">
-                        {customer.name}
-                      </h3>
-                      <p className="text-sm text-slate-300 mt-1">
-                        {customer.email}
-                      </p>
+                      <h3 className="font-medium text-slate-200">{customer.name}</h3>
+                      <p className="text-sm text-slate-300 mt-1">{customer.email}</p>
                       <div className="mt-2 text-xs text-slate-400 space-y-1">
                         <p>ID: {customer.id}</p>
                         <p>Dirección: {formatAddress(customer.address)}</p>
                         <p>Registrado: {formatDate(customer.registeredAt)}</p>
-                        <p>
-                          Estado: {customer.isActive ? 'Activo' : 'Inactivo'}
-                        </p>
+                        <p>Estado: {customer.isActive ? 'Activo' : 'Inactivo'}</p>
                       </div>
                     </div>
                   </div>
