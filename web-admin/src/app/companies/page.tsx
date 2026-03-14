@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 
 import { useContract } from '../../hooks/useContract';
@@ -27,7 +27,9 @@ export default function CompaniesPage() {
 function CompaniesPageContent() {
   const { publicKey, connected } = useWallet();
   const { connection } = useConnection();
-  const ecommerceContract = useContract('Ecommerce', connection, { publicKey }, null);
+  const publicKeyString = publicKey?.toBase58();
+  const signer = useMemo(() => (publicKey ? { publicKey } : null), [publicKeyString]);
+  const ecommerceContract = useContract('Ecommerce', connection, signer, null);
 
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,7 +99,7 @@ function CompaniesPageContent() {
     return () => {
       isMounted = false;
     };
-  }, [ecommerceContract, connected, publicKey]);
+  }, [ecommerceContract, connected, publicKeyString]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

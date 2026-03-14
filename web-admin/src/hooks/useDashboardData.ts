@@ -17,8 +17,9 @@ type DashboardData = {
 export function useDashboardData() {
   const { publicKey } = useWallet();
   const { connection } = useConnection();
+  const signer = useMemo(() => (publicKey ? { publicKey } : null), [publicKey?.toBase58()]);
   // Pass null for chainId as it's not used in the Solana refactor
-  const ecommerceContract = useContract('Ecommerce', connection, { publicKey }, null);
+  const ecommerceContract = useContract('Ecommerce', connection, signer, null);
 
   const [data, setData] = useState<DashboardData>({
     companyCount: 0,

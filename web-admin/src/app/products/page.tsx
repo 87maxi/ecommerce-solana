@@ -1,20 +1,25 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 
 import ProductModal from '../../components/ProductModal';
 import { useContract } from '../../hooks/useContract';
+import { useIsMounted } from '../../hooks/useIsMounted';
 import { normalizeProduct, normalizeArrayResponse } from '../../lib/contractUtils';
 import { formatAddress } from '../../lib/utils';
 import { Product } from '../../types';
 import { RoleGuard } from '../../components/RoleGuard';
 
 export default function ProductsPage() {
+  const isMounted = useIsMounted();
   const { publicKey, connected } = useWallet();
   const { connection } = useConnection();
-  const ecommerceContract = useContract('Ecommerce', connection, { publicKey }, null);
+
+  const publicKeyString = publicKey?.toBase58();
+  const signer = useMemo(() => (publicKey ? { publicKey } : null), [publicKeyString]);
+  const ecommerceContract = useContract('Ecommerce', connection, signer, null);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +29,7 @@ export default function ProductsPage() {
   const [isCompanyOwner, setIsCompanyOwner] = useState(false);
 
   const loadProducts = async () => {
-    if (!ecommerceContract || !publicKey) return;
+    if (!ecommerceContract || !publicKeyString) return;
 
     try {
       setLoading(true);
@@ -39,7 +44,7 @@ export default function ProductsPage() {
 
         for (const id of companyIds) {
           const company = await ecommerceContract.getCompany(id);
-          if (company.owner.toLowerCase() === publicKey.toBase58().toLowerCase()) {
+          if (company.owner.toLowerCase() === publicKeyString.toLowerCase()) {
             userIsOwner = true;
             break;
           }
@@ -82,12 +87,12 @@ export default function ProductsPage() {
   };
 
   useEffect(() => {
-    if (connected && ecommerceContract) {
+    if (isMounted && connected && ecommerceContract) {
       loadProducts();
-    } else if (!connected) {
+    } else if (isMounted && !connected) {
       setLoading(false);
     }
-  }, [connected, ecommerceContract, publicKey]);
+  }, [isMounted, connected, ecommerceContract, publicKeyString]);
 
   const handleAddProduct = () => {
     setEditingProduct(null);
