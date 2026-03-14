@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Mint, MintTo, Token, TokenAccount};
 
-declare_id!("8yCgaxbTDGiWe6XuMAq6XUimC8ovSx5J4GEJnEKuhGk5");
+declare_id!("4ourUpEhfq64WVb1gRwR7fxkWbKZnMPmbx6D6dFwvGCq");
 
 #[program]
 pub mod solana {
@@ -42,6 +42,53 @@ pub mod solana {
         msg!("Burned {} EURT tokens", amount);
         Ok(())
     }
+
+    // --- E-commerce Instructions ---
+
+    pub fn register_company(
+        ctx: Context<RegisterCompany>,
+        name: String,
+        description: String,
+    ) -> Result<()> {
+        let company = &mut ctx.accounts.company;
+        company.owner = ctx.accounts.owner.key();
+        company.name = name.clone();
+        company.description = description;
+        company.is_active = true;
+        msg!("Company registered: {}", name);
+        Ok(())
+    }
+
+    pub fn add_product(
+        ctx: Context<AddProduct>,
+        name: String,
+        price: u64,
+        stock: u64,
+    ) -> Result<()> {
+        let product = &mut ctx.accounts.product;
+        product.company = ctx.accounts.company.key();
+        product.name = name.clone();
+        product.price = price;
+        product.stock = stock;
+        msg!("Product added: {} with price {}", name, price);
+        Ok(())
+    }
+}
+
+#[account]
+pub struct Company {
+    pub owner: Pubkey,
+    pub name: String,
+    pub description: String,
+    pub is_active: bool,
+}
+
+#[account]
+pub struct Product {
+    pub company: Pubkey,
+    pub name: String,
+    pub price: u64,
+    pub stock: u64,
 }
 
 #[derive(Accounts)]
@@ -104,4 +151,37 @@ pub struct BurnTokens<'info> {
     pub authority: Signer<'info>,
 
     pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+#[instruction(name: String, description: String)]
+pub struct RegisterCompany<'info> {
+    #[account(
+        init,
+        payer = owner,
+        space = 8 + 32 + 100 + 200 + 1,
+        seeds = [b"company", owner.key().as_ref()],
+        bump
+    )]
+    pub company: Account<'info, Company>,
+    #[account(mut)]
+    pub owner: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(name: String, price: u64, stock: u64)]
+pub struct AddProduct<'info> {
+    #[account(
+        init,
+        payer = owner,
+        space = 8 + 32 + 100 + 8 + 8,
+        seeds = [b"product", company.key().as_ref(), name.as_bytes()],
+        bump
+    )]
+    pub product: Account<'info, Product>,
+    pub company: Account<'info, Company>,
+    #[account(mut)]
+    pub owner: Signer<'info>,
+    pub system_program: Program<'info, System>,
 }

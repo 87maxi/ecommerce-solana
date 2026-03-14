@@ -1,0 +1,1299 @@
+[
+  {
+    "description": "Fund the DAO contract with 10 ETH",
+    "function": "fund()",
+    "args": [],
+    "value": "10ether",
+    "signerPrivateKey": "YOUR_PROPOSER_PRIVATE_KEY"
+  },
+  {
+    "description": "Create Proposal #1: Upgrade mainnet contracts",
+    "function": "createProposal(bytes32)",
+    "args": [
+      "0x76de022133496924e231b10630b42c16f0a1c7784013444a860b7593c783c44a"
+    ],
+    "signerPrivateKey": "YOUR_PROPOSER_PRIVATE_KEY"
+  },
+  {
+    "description": "Create Proposal #2: Allocate treasury funds",
+    "function": "createProposal(bytes32)",
+    "args": [
+      "0x0375a16d82348f98725925a1f6a1d8a39dfa5392d4f216b5155f111815123992"
+    ],
+    "signerPrivateKey": "YOUR_PROPOSER_PRIVATE_KEY"
+  },
+  {
+    "description": "Create Proposal #3: Partner with AwesomeProject",
+    "function": "createProposal(bytes32)",
+    "args": [
+      "0x82f281e01d713c8cd4c13a232f79261a208221b65e9766943640286827038165"
+    ],
+    "signerPrivateKey": "YOUR_PROPOSER_PRIVATE_KEY"
+  },
+  {
+    "description": "Account #1 votes FOR Proposal #1",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Account #2 votes AGAINST Proposal #1",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 1],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Account #3 votes FOR Proposal #1",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Account #4 votes FOR Proposal #1",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Account #1 votes FOR Proposal #2",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 0],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Account #3 votes ABSTAIN on Proposal #2",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 2],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Account #4 votes AGAINST Proposal #2",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Account #5 votes FOR Proposal #2",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 0],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Account #1 votes FOR Proposal #3",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 0],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Account #2 votes FOR Proposal #3",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 0],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Account #6 votes AGAINST Proposal #3",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 1],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #1 (Voter #1 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Mass vote #2 (Voter #2 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Mass vote #3 (Voter #3 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Mass vote #4 (Voter #4 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Mass vote #5 (Voter #5 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Mass vote #6 (Voter #6 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #7 (Voter #7 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+  },
+  {
+    "description": "Mass vote #8 (Voter #8 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+  },
+  {
+    "description": "Mass vote #9 (Voter #9 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+  },
+  {
+    "description": "Mass vote #10 (Voter #10 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0xf214f2b2cd398c3081b5f50323317e04812f46d52091d5e166032f6002763f04"
+  },
+  {
+    "description": "Mass vote #11 (Voter #1 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Mass vote #12 (Voter #2 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Mass vote #13 (Voter #3 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Mass vote #14 (Voter #4 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Mass vote #15 (Voter #5 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Mass vote #16 (Voter #6 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #17 (Voter #7 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+  },
+  {
+    "description": "Mass vote #18 (Voter #8 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+  },
+  {
+    "description": "Mass vote #19 (Voter #9 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+  },
+  {
+    "description": "Mass vote #20 (Voter #10 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0xf214f2b2cd398c3081b5f50323317e04812f46d52091d5e166032f6002763f04"
+  },
+  {
+    "description": "Mass vote #21 (Voter #1 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Mass vote #22 (Voter #2 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Mass vote #23 (Voter #3 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Mass vote #24 (Voter #4 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Mass vote #25 (Voter #5 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Mass vote #26 (Voter #6 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #27 (Voter #7 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+  },
+  {
+    "description": "Mass vote #28 (Voter #8 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+  },
+  {
+    "description": "Mass vote #29 (Voter #9 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+  },
+  {
+    "description": "Mass vote #30 (Voter #10 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0xf214f2b2cd398c3081b5f50323317e04812f46d52091d5e166032f6002763f04"
+  },
+  {
+    "description": "Mass vote #31 (Voter #1 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Mass vote #32 (Voter #2 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Mass vote #33 (Voter #3 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Mass vote #34 (Voter #4 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Mass vote #35 (Voter #5 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Mass vote #36 (Voter #6 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #37 (Voter #7 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+  },
+  {
+    "description": "Mass vote #38 (Voter #8 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+  },
+  {
+    "description": "Mass vote #39 (Voter #9 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+  },
+  {
+    "description": "Mass vote #40 (Voter #10 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0xf214f2b2cd398c3081b5f50323317e04812f46d52091d5e166032f6002763f04"
+  },
+  {
+    "description": "Mass vote #41 (Voter #1 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Mass vote #42 (Voter #2 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Mass vote #43 (Voter #3 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Mass vote #44 (Voter #4 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Mass vote #45 (Voter #5 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Mass vote #46 (Voter #6 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #47 (Voter #7 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+  },
+  {
+    "description": "Mass vote #48 (Voter #8 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+  },
+  {
+    "description": "Mass vote #49 (Voter #9 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+  },
+  {
+    "description": "Mass vote #50 (Voter #10 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0xf214f2b2cd398c3081b5f50323317e04812f46d52091d5e166032f6002763f04"
+  },
+  {
+    "description": "Mass vote #51 (Voter #1 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Mass vote #52 (Voter #2 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Mass vote #53 (Voter #3 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Mass vote #54 (Voter #4 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Mass vote #55 (Voter #5 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Mass vote #56 (Voter #6 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #57 (Voter #7 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+  },
+  {
+    "description": "Mass vote #58 (Voter #8 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+  },
+  {
+    "description": "Mass vote #59 (Voter #9 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+  },
+  {
+    "description": "Mass vote #60 (Voter #10 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0xf214f2b2cd398c3081b5f50323317e04812f46d52091d5e166032f6002763f04"
+  },
+  {
+    "description": "Mass vote #61 (Voter #1 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Mass vote #62 (Voter #2 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Mass vote #63 (Voter #3 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Mass vote #64 (Voter #4 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Mass vote #65 (Voter #5 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Mass vote #66 (Voter #6 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #67 (Voter #7 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+  },
+  {
+    "description": "Mass vote #68 (Voter #8 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+  },
+  {
+    "description": "Mass vote #69 (Voter #9 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+  },
+  {
+    "description": "Mass vote #70 (Voter #10 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0xf214f2b2cd398c3081b5f50323317e04812f46d52091d5e166032f6002763f04"
+  },
+  {
+    "description": "Mass vote #71 (Voter #1 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Mass vote #72 (Voter #2 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Mass vote #73 (Voter #3 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Mass vote #74 (Voter #4 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Mass vote #75 (Voter #5 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Mass vote #76 (Voter #6 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #77 (Voter #7 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+  },
+  {
+    "description": "Mass vote #78 (Voter #8 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+  },
+  {
+    "description": "Mass vote #79 (Voter #9 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+  },
+  {
+    "description": "Mass vote #80 (Voter #10 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0xf214f2b2cd398c3081b5f50323317e04812f46d52091d5e166032f6002763f04"
+  },
+  {
+    "description": "Mass vote #81 (Voter #1 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Mass vote #82 (Voter #2 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Mass vote #83 (Voter #3 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Mass vote #84 (Voter #4 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Mass vote #85 (Voter #5 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Mass vote #86 (Voter #6 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #87 (Voter #7 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+  },
+  {
+    "description": "Mass vote #88 (Voter #8 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+  },
+  {
+    "description": "Mass vote #89 (Voter #9 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+  },
+  {
+    "description": "Mass vote #90 (Voter #10 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0xf214f2b2cd398c3081b5f50323317e04812f46d52091d5e166032f6002763f04"
+  },
+  {
+    "description": "Mass vote #91 (Voter #1 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Mass vote #92 (Voter #2 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Mass vote #93 (Voter #3 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Mass vote #94 (Voter #4 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Mass vote #95 (Voter #5 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Mass vote #96 (Voter #6 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #97 (Voter #7 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+  },
+  {
+    "description": "Mass vote #98 (Voter #8 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+  },
+  {
+    "description": "Mass vote #99 (Voter #9 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+  },
+  {
+    "description": "Mass vote #100 (Voter #10 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0xf214f2b2cd398c3081b5f50323317e04812f46d52091d5e166032f6002763f04"
+  },
+  {
+    "description": "Mass vote #101 (Voter #1 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Mass vote #102 (Voter #2 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Mass vote #103 (Voter #3 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Mass vote #104 (Voter #4 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Mass vote #105 (Voter #5 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Mass vote #106 (Voter #6 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #107 (Voter #7 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+  },
+  {
+    "description": "Mass vote #108 (Voter #8 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+  },
+  {
+    "description": "Mass vote #109 (Voter #9 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+  },
+  {
+    "description": "Mass vote #110 (Voter #10 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0xf214f2b2cd398c3081b5f50323317e04812f46d52091d5e166032f6002763f04"
+  },
+  {
+    "description": "Mass vote #111 (Voter #1 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Mass vote #112 (Voter #2 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Mass vote #113 (Voter #3 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Mass vote #114 (Voter #4 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Mass vote #115 (Voter #5 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Mass vote #116 (Voter #6 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #117 (Voter #7 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+  },
+  {
+    "description": "Mass vote #118 (Voter #8 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+  },
+  {
+    "description": "Mass vote #119 (Voter #9 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+  },
+  {
+    "description": "Mass vote #120 (Voter #10 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0xf214f2b2cd398c3081b5f50323317e04812f46d52091d5e166032f6002763f04"
+  },
+  {
+    "description": "Mass vote #121 (Voter #1 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Mass vote #122 (Voter #2 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Mass vote #123 (Voter #3 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Mass vote #124 (Voter #4 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Mass vote #125 (Voter #5 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Mass vote #126 (Voter #6 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #127 (Voter #7 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+  },
+  {
+    "description": "Mass vote #128 (Voter #8 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+  },
+  {
+    "description": "Mass vote #129 (Voter #9 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+  },
+  {
+    "description": "Mass vote #130 (Voter #10 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0xf214f2b2cd398c3081b5f50323317e04812f46d52091d5e166032f6002763f04"
+  },
+  {
+    "description": "Mass vote #131 (Voter #1 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Mass vote #132 (Voter #2 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Mass vote #133 (Voter #3 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Mass vote #134 (Voter #4 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Mass vote #135 (Voter #5 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Mass vote #136 (Voter #6 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #137 (Voter #7 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+  },
+  {
+    "description": "Mass vote #138 (Voter #8 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+  },
+  {
+    "description": "Mass vote #139 (Voter #9 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+  },
+  {
+    "description": "Mass vote #140 (Voter #10 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0xf214f2b2cd398c3081b5f50323317e04812f46d52091d5e166032f6002763f04"
+  },
+  {
+    "description": "Mass vote #141 (Voter #1 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Mass vote #142 (Voter #2 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Mass vote #143 (Voter #3 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Mass vote #144 (Voter #4 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Mass vote #145 (Voter #5 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Mass vote #146 (Voter #6 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #147 (Voter #7 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+  },
+  {
+    "description": "Mass vote #148 (Voter #8 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+  },
+  {
+    "description": "Mass vote #149 (Voter #9 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+  },
+  {
+    "description": "Mass vote #150 (Voter #10 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0xf214f2b2cd398c3081b5f50323317e04812f46d52091d5e166032f6002763f04"
+  },
+  {
+    "description": "Mass vote #151 (Voter #1 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Mass vote #152 (Voter #2 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Mass vote #153 (Voter #3 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Mass vote #154 (Voter #4 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Mass vote #155 (Voter #5 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Mass vote #156 (Voter #6 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #157 (Voter #7 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+  },
+  {
+    "description": "Mass vote #158 (Voter #8 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+  },
+  {
+    "description": "Mass vote #159 (Voter #9 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+  },
+  {
+    "description": "Mass vote #160 (Voter #10 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0xf214f2b2cd398c3081b5f50323317e04812f46d52091d5e166032f6002763f04"
+  },
+  {
+    "description": "Mass vote #161 (Voter #1 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Mass vote #162 (Voter #2 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Mass vote #163 (Voter #3 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Mass vote #164 (Voter #4 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Mass vote #165 (Voter #5 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Mass vote #166 (Voter #6 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #167 (Voter #7 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+  },
+  {
+    "description": "Mass vote #168 (Voter #8 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+  },
+  {
+    "description": "Mass vote #169 (Voter #9 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+  },
+  {
+    "description": "Mass vote #170 (Voter #10 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0xf214f2b2cd398c3081b5f50323317e04812f46d52091d5e166032f6002763f04"
+  },
+  {
+    "description": "Mass vote #171 (Voter #1 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Mass vote #172 (Voter #2 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Mass vote #173 (Voter #3 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Mass vote #174 (Voter #4 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Mass vote #175 (Voter #5 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Mass vote #176 (Voter #6 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #177 (Voter #7 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+  },
+  {
+    "description": "Mass vote #178 (Voter #8 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+  },
+  {
+    "description": "Mass vote #179 (Voter #9 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+  },
+  {
+    "description": "Mass vote #180 (Voter #10 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0xf214f2b2cd398c3081b5f50323317e04812f46d52091d5e166032f6002763f04"
+  },
+  {
+    "description": "Mass vote #181 (Voter #1 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Mass vote #182 (Voter #2 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Mass vote #183 (Voter #3 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Mass vote #184 (Voter #4 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Mass vote #185 (Voter #5 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Mass vote #186 (Voter #6 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #187 (Voter #7 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+  },
+  {
+    "description": "Mass vote #188 (Voter #8 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+  },
+  {
+    "description": "Mass vote #189 (Voter #9 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+  },
+  {
+    "description": "Mass vote #190 (Voter #10 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0xf214f2b2cd398c3081b5f50323317e04812f46d52091d5e166032f6002763f04"
+  },
+  {
+    "description": "Mass vote #191 (Voter #1 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+  },
+  {
+    "description": "Mass vote #192 (Voter #2 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+  },
+  {
+    "description": "Mass vote #193 (Voter #3 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+  },
+  {
+    "description": "Mass vote #194 (Voter #4 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+  },
+  {
+    "description": "Mass vote #195 (Voter #5 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+  },
+  {
+    "description": "Mass vote #196 (Voter #6 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x92db14e403b83dfe36f6bff8393b3b2d112ea9ae19ca7a616263885df7b2b7b8"
+  },
+  {
+    "description": "Mass vote #197 (Voter #7 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+  },
+  {
+    "description": "Mass vote #198 (Voter #8 on Proposal #3)",
+    "function": "castVote(uint256,uint8)",
+    "args": [3, 2],
+    "signerPrivateKey": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+  },
+  {
+    "description": "Mass vote #199 (Voter #9 on Proposal #1)",
+    "function": "castVote(uint256,uint8)",
+    "args": [1, 0],
+    "signerPrivateKey": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+  },
+  {
+    "description": "Mass vote #200 (Voter #10 on Proposal #2)",
+    "function": "castVote(uint256,uint8)",
+    "args": [2, 1],
+    "signerPrivateKey": "0xf214f2b2cd398c3081b5f50323317e04812f46d52091d5e166032f6002763f04"
+  }
+]

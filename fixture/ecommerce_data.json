@@ -1,0 +1,65 @@
+{
+  "programId": "4ourUpEhfq64WVb1gRwR7fxkWbKZnMPmbx6D6dFwvGCq",
+  "steps": [
+    {
+      "instruction": "register_company",
+      "description": "Registrar Empresa de Electrónica",
+      "args": [
+        "TechStore",
+        "Venta de hardware y gadgets de última generación"
+      ],
+      "accounts": {
+        "company": {
+          "pda": [
+            "company",
+            "@wallet"
+          ]
+        },
+        "owner": "@wallet",
+        "system_program": "11111111111111111111111111111111"
+      }
+    },
+    {
+      "instruction": "add_product",
+      "description": "Añadir Laptop Pro a TechStore",
+      "args": [
+        "Laptop Pro",
+        1200000000,
+        50
+      ],
+      "accounts": {
+        "product": {
+          "pda": [
+            "product",
+            "@company_pda",
+            "Laptop Pro"
+          ]
+        },
+        "company": "@company_pda",
+        "owner": "@wallet",
+        "system_program": "11111111111111111111111111111111"
+      }
+    },
+    {
+      "instruction": "add_product",
+      "description": "Añadir Monitor 4K a TechStore",
+      "args": [
+        "Monitor 4K",
+        450000000,
+        100
+      ],
+      "accounts": {
+        "product": {
+          "pda": [
+            "product",
+            "@company_pda",
+            "Monitor 4K"
+          ]
+        },
+        "company": "@company_pda",
+        "owner": "@wallet",
+        "system_program": "11111111111111111111111111111111"
+      }
+    }
+  ]
+}

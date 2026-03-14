@@ -31,14 +31,15 @@ solana balance --url $RPC_URL
 
 # --- 1. Build and Deploy E-Commerce Anchor Program ---
 echo ""
-echo "📦 Building and Deploying E-Commerce Program..."
-cd "$ROOT/solana-ecommerce"
-anchor build
+echo "📦 Building and Deploying Anchor Program (for fixtures)..."
+cd "$ROOT/solana-stablecoin/solana"
+cargo build-sbf
 
-PROGRAM_SO_PATH="$ROOT/solana-ecommerce/target/deploy/solana_ecommerce.so"
-PROGRAM_KEYPAIR_PATH="$ROOT/solana-ecommerce/target/deploy/solana_ecommerce-keypair.json"
+PROGRAM_SO_PATH="$ROOT/solana-stablecoin/solana/target/deploy/solana.so"
+PROGRAM_KEYPAIR_PATH="$ROOT/solana-stablecoin/solana/target/deploy/solana-keypair.json"
+# Reutilizamos la variable ECOMMERCE_PROGRAM_ADDRESS para compatibilidad con el resto del script
 ECOMMERCE_PROGRAM_ADDRESS=$(solana-keygen pubkey "$PROGRAM_KEYPAIR_PATH")
-echo "📍 E-Commerce Program ID: $ECOMMERCE_PROGRAM_ADDRESS"
+echo "📍 Deployed Program ID: $ECOMMERCE_PROGRAM_ADDRESS"
 
 echo "Deploying program binary to localnet... (This may take a moment)"
 solana program deploy \
@@ -49,13 +50,25 @@ solana program deploy \
     "$PROGRAM_SO_PATH"
 
 if [ $? -eq 0 ]; then
-    echo "✅ E-Commerce program deployed successfully."
+    echo "✅ Program deployed successfully."
 else
-    echo "❌ E-Commerce program deployment failed."
+    echo "❌ Program deployment failed."
     exit 1
 fi
 
-IDL_JSON=$(cat target/idl/solana_ecommerce.json)
+IDL_JSON=$(cat target/idl/solana.json)
+
+# Inyectar el Program ID desplegado en el archivo de fixture
+echo "⚙️  Injecting Program ID into fixture file..."
+FIXTURE_FILE="$ROOT/fixture/ecommerce_data.json"
+if [ -f "$FIXTURE_FILE" ]; then
+    # Usar un archivo temporal para una edición segura con jq
+    tmp_file=$(mktemp)
+    jq --arg program_id "$ECOMMERCE_PROGRAM_ADDRESS" '.programId = $program_id' "$FIXTURE_FILE" > "$tmp_file" && mv "$tmp_file" "$FIXTURE_FILE"
+    echo "✅ Fixture updated with Program ID: $ECOMMERCE_PROGRAM_ADDRESS"
+else
+    echo "⚠️  Warning: Fixture file not found, skipping Program ID injection."
+fi
 
 # --- 2. Create the EURT SPL Token Mint ---
 echo ""
