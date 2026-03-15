@@ -1,6 +1,7 @@
 "use client";
 
 import "./globals.css";
+import "@solana/wallet-adapter-react-ui/styles.css";
 import { AppWalletProvider } from "./providers"; // Import from the correct path
 import { Inter } from "next/font/google";
 
