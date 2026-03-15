@@ -109,6 +109,7 @@ async function main() {
 
   // Función para obtener el discriminador de Anchor (hash sha256("global:<nombre_instruccion>")[0..8])
   const getDiscriminator = (instructionName: string): Buffer => {
+    // Generar discriminador de Anchor: sha256("global:<nombre_funcion>")[0..8]
     const hash = createHash("sha256");
     hash.update(`global:${instructionName}`);
     return hash.digest().slice(0, 8);
@@ -148,20 +149,47 @@ async function main() {
           const seeds = ((accountDef as any).pda as string[]).map((seed) => {
             if (seed.startsWith("@"))
               return getContextRef(seed, context).toBuffer();
+            // Convertir IDs numéricos a u64 Little Endian (estándar de Anchor para sequential IDs)
+            if (/^\d+$/.test(seed)) {
+              return serializeBorshU64(BigInt(seed));
+            }
             return Buffer.from(seed);
           });
           const [pda] = PublicKey.findProgramAddressSync(seeds, programId);
           pubkey = pda;
-          context[`@${keyName}_pda`] = pda; // Guardar para pasos futuros
+          context[`@${keyName}_pda`] = pda;
         } else {
           throw new Error(`Definición de cuenta inválida para: ${keyName}`);
         }
 
-        // Inferir mutabilidad/firma basado en nombres comunes (heurística simple)
-        // Esto asume convenciones de Anchor. En producción real sin IDL,
-        // el JSON debería especificar "isWritable" e "isSigner".
         let isWritable = true;
         let isSigner = false;
+
+        if (typeof accountDef === "object" && accountDef !== null) {
+          if ((accountDef as any).isWritable !== undefined)
+            isWritable = (accountDef as any).isWritable;
+          if ((accountDef as any).isSigner !== undefined)
+            isSigner = (accountDef as any).isSigner;
+        }
+
+        const isPda =
+          typeof accountDef === "object" &&
+          accountDef !== null &&
+          (accountDef as any).pda;
+
+        if (!isSigner) {
+          const lowerKey = keyName.toLowerCase();
+          // FORZAR FIRMANTE: Si la cuenta coincide con nuestro pagador (payer), DEBE ser firmante.
+          // Esto garantiza que cualquier cuenta de administración o propiedad firme correctamente en la red.
+          if (
+            pubkey.equals(payer.publicKey) ||
+            ["owner", "payer", "admin", "authority", "user", "signer"].includes(
+              lowerKey
+            )
+          ) {
+            isSigner = true;
+          }
+        }
 
         if (
           keyName === "system_program" ||
@@ -169,20 +197,12 @@ async function main() {
           keyName.includes("program")
         ) {
           isWritable = false;
-        }
-        if (
-          keyName === "owner" ||
-          keyName === "payer" ||
-          keyName === "authority"
-        ) {
-          isSigner = true;
+          isSigner = false;
         }
 
-        // Si es el wallet del ejecutante, siempre es firmante
-        if (pubkey.equals(payer.publicKey)) {
-          isSigner = true;
-        }
-
+        console.log(
+          `     - Account [${keyName}]: ${pubkey.toBase58()} (Signer: ${isSigner}, Writable: ${isWritable})`
+        );
         keys.push({ pubkey, isSigner, isWritable });
       }
 
@@ -193,7 +213,12 @@ async function main() {
       if (step.args && step.args.length > 0) {
         const buffers: Buffer[] = [];
 
-        if (step.instruction === "register_company") {
+        if (
+          step.instruction === "initialize" ||
+          step.instruction === "initialize_ecommerce"
+        ) {
+          // Sin argumentos extra
+        } else if (step.instruction === "register_company") {
           // name: String, description: String
           buffers.push(serializeBorshString(step.args[0]));
           buffers.push(serializeBorshString(step.args[1]));
@@ -202,6 +227,12 @@ async function main() {
           buffers.push(serializeBorshString(step.args[0]));
           buffers.push(serializeBorshU64(step.args[1]));
           buffers.push(serializeBorshU64(step.args[2]));
+        } else if (
+          step.instruction === "mint_tokens" ||
+          step.instruction === "burn_tokens"
+        ) {
+          // amount: u64
+          buffers.push(serializeBorshU64(step.args[0]));
         } else {
           throw new Error(
             `Serialización manual no soportada para instrucción: ${step.instruction}`
@@ -221,28 +252,56 @@ async function main() {
         data,
       });
 
-      const transaction = new Transaction().add(instruction);
-
-      // Pagar la transacción
+      const transaction = new Transaction();
+      transaction.add(instruction);
       transaction.feePayer = payer.publicKey;
-      const latestBlockhash = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = latestBlockhash.blockhash;
 
-      // Enviar
-      const signature = await sendAndConfirmTransaction(
-        connection,
-        transaction,
-        [payer]
+      const { blockhash } = await connection.getLatestBlockhash("confirmed");
+      transaction.recentBlockhash = blockhash;
+
+      // Firma manual y envío crudo para asegurar que la firma del pagador esté presente en el mensaje.
+      transaction.sign(payer);
+
+      const signature = await connection.sendRawTransaction(
+        transaction.serialize(),
+        {
+          skipPreflight: true,
+        }
       );
+      await connection.confirmTransaction(signature, "confirmed");
 
       console.log(`   ✅ Éxito! Hash: ${signature}`);
     } catch (err: any) {
-      console.error(`   ❌ Fallo: ${err.message || err}`);
-      if (err.logs) {
-        console.error("   📜 Logs:");
-        err.logs.forEach((l: string) => console.error(`      ${l}`));
+      const logs = err.logs || [];
+      const errorMsg = (err.message || "").toLowerCase();
+
+      // Detectar errores de cuenta duplicada o ya inicializada (0x0 en Anchor logs a veces indica ya procesado)
+      const isAlreadyExists =
+        logs.some(
+          (l: string) =>
+            l.toLowerCase().includes("already in use") ||
+            l.toLowerCase().includes("already initialized")
+        ) ||
+        errorMsg.includes("already in use") ||
+        errorMsg.includes("already initialized") ||
+        errorMsg.includes("0x0") ||
+        errorMsg.includes("custom program error: 0x0");
+
+      if (isAlreadyExists) {
+        console.log(
+          `   ⚠️  Cuenta o registro ya existente. Continuando con el fixture...`
+        );
+        continue;
       }
-      process.exit(1);
+
+      console.error(`   ❌ Fallo: ${err.message || err}`);
+      if (logs.length > 0) {
+        console.error("   📜 Logs:");
+        logs.forEach((l: string) => console.error(`      ${l}`));
+      }
+
+      // No detenemos la ejecución completa para permitir que otros datos se carguen
+      console.log("   ⏭️  Saltando al siguiente paso...");
     }
   }
   console.log("\n✨ Importación de datos finalizada.");

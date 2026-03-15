@@ -3,17 +3,11 @@
   "steps": [
     {
       "instruction": "register_company",
-      "description": "Registrar Empresa de Electrónica",
-      "args": [
-        "TechStore",
-        "Venta de hardware y gadgets de última generación"
-      ],
+      "description": "Registrar Empresa TechStore",
+      "args": ["TechStore", "Venta de hardware y gadgets de última generación"],
       "accounts": {
         "company": {
-          "pda": [
-            "company",
-            "@wallet"
-          ]
+          "pda": ["company", "@wallet"]
         },
         "owner": "@wallet",
         "system_program": "11111111111111111111111111111111"
@@ -21,19 +15,11 @@
     },
     {
       "instruction": "add_product",
-      "description": "Añadir Laptop Pro a TechStore",
-      "args": [
-        "Laptop Pro",
-        1200000000,
-        50
-      ],
+      "description": "Añadir Laptop Pro",
+      "args": ["Laptop Pro", 120000, 50],
       "accounts": {
         "product": {
-          "pda": [
-            "product",
-            "@company_pda",
-            "Laptop Pro"
-          ]
+          "pda": ["product", "@company_pda", "Laptop Pro"]
         },
         "company": "@company_pda",
         "owner": "@wallet",
@@ -42,19 +28,50 @@
     },
     {
       "instruction": "add_product",
-      "description": "Añadir Monitor 4K a TechStore",
-      "args": [
-        "Monitor 4K",
-        450000000,
-        100
-      ],
+      "description": "Añadir Monitor 4K",
+      "args": ["Monitor 4K", 45000, 100],
       "accounts": {
         "product": {
-          "pda": [
-            "product",
-            "@company_pda",
-            "Monitor 4K"
-          ]
+          "pda": ["product", "@company_pda", "Monitor 4K"]
+        },
+        "company": "@company_pda",
+        "owner": "@wallet",
+        "system_program": "11111111111111111111111111111111"
+      }
+    },
+    {
+      "instruction": "add_product",
+      "description": "Añadir Smartphone X1",
+      "args": ["Smartphone X1", 89900, 75],
+      "accounts": {
+        "product": {
+          "pda": ["product", "@company_pda", "Smartphone X1"]
+        },
+        "company": "@company_pda",
+        "owner": "@wallet",
+        "system_program": "11111111111111111111111111111111"
+      }
+    },
+    {
+      "instruction": "add_product",
+      "description": "Añadir Teclado Mecánico",
+      "args": ["Teclado Mecánico RGB", 12500, 150],
+      "accounts": {
+        "product": {
+          "pda": ["product", "@company_pda", "Teclado Mecánico RGB"]
+        },
+        "company": "@company_pda",
+        "owner": "@wallet",
+        "system_program": "11111111111111111111111111111111"
+      }
+    },
+    {
+      "instruction": "add_product",
+      "description": "Añadir Ratón Gaming",
+      "args": ["Mouse Pro Wireless", 7900, 200],
+      "accounts": {
+        "product": {
+          "pda": ["product", "@company_pda", "Mouse Pro Wireless"]
         },
         "company": "@company_pda",
         "owner": "@wallet",
