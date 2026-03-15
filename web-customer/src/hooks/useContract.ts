@@ -13,6 +13,7 @@ import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import {
   getAssociatedTokenAddress,
   createTransferCheckedInstruction,
+  createAssociatedTokenAccountInstruction,
 } from "@solana/spl-token";
 import EcommerceABI from "@/contracts/abis/EcommerceABI.json";
 
@@ -108,40 +109,10 @@ export function useContract() {
   }, [walletAddress]);
 
   const checkAndRegisterCustomer = useCallback(async (): Promise<boolean> => {
-    if (!program || !publicKey) return false;
-
-    try {
-      const [customerPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("customer"), publicKey.toBuffer()],
-        program.programId,
-      );
-
-      try {
-        const customerAccount =
-          await program.account.customer.fetch(customerPda);
-        if (customerAccount && (customerAccount as any).isRegistered) {
-          return true;
-        }
-      } catch (e) {
-        // Account doesn't exist, proceed to register
-      }
-
-      console.log("[useContract] Registering customer...");
-      await program.methods
-        .registerCustomer()
-        .accounts({
-          customer: customerPda,
-          user: publicKey,
-          systemProgram: SystemProgram.programId,
-        })
-        .rpc();
-
-      return true;
-    } catch (error) {
-      console.error("[useContract] Error in checkAndRegisterCustomer:", error);
-      return false;
-    }
-  }, [program, publicKey]);
+    // El programa actual en Surfpool no soporta registro de clientes en la blockchain.
+    // Retornamos true para no bloquear el flujo de la aplicación.
+    return true;
+  }, []);
 
   const getAllProducts = useCallback(async () => {
     if (!program) return [];
@@ -288,11 +259,17 @@ export function useContract() {
         );
 
         // Dirección del Mint de EURT (desde variables de entorno o fallback)
+        // La dirección AKWdem... es el Mint real verificado en Surfpool.
         const mintAddress = new PublicKey(
           process.env.NEXT_PUBLIC_EUROTOKEN_MINT ||
-            "8yCgaxbTDGiWe6XuMAq6XUimC8ovSx5J4GEJnEKuhGk5",
+            "AKWdemYgbmSujB1jTMm8q6q3fKTtcxr5XXp8tSSoDekC",
         );
-        const merchantPubKey = new PublicKey(merchantAddress);
+        // Usamos la dirección del merchant desde el entorno o el argumento
+        const merchantPubKey = new PublicKey(
+          process.env.NEXT_PUBLIC_MERCHANT_ADDRESS ||
+            merchantAddress ||
+            "7eCTmt5LYSqnjgw8jebHjUzf8X7omxEpxYHbsXsmPtZQ",
+        );
 
         // Obtener las Cuentas de Token Asociadas (ATA)
         const userAta = await getAssociatedTokenAddress(mintAddress, publicKey);
@@ -301,27 +278,83 @@ export function useContract() {
           merchantPubKey,
         );
 
-        // Calcular el monto en unidades base (EURT suele usar 6 decimales)
+        // 1. Verificar si el usuario tiene una ATA y si tiene balance suficiente
+        const userAtaInfo = await connection.getAccountInfo(userAta);
+        if (!userAtaInfo) {
+          console.error(
+            "[useContract] Tu cuenta no tiene tokens EURT. ATA no encontrada.",
+          );
+          alert("No posees tokens EURT para realizar esta compra.");
+          return null;
+        }
+
+        // 2. Calcular el monto en unidades base (EURT usa 6 decimales)
         const decimals = 6;
         const amountInUnits = BigInt(
           Math.round(parseFloat(amount) * Math.pow(10, decimals)),
         );
 
-        // Construir la instrucción de transferencia SPL
-        const transferInstruction = createTransferCheckedInstruction(
-          userAta,
-          mintAddress,
-          merchantAta,
-          publicKey,
-          amountInUnits,
-          decimals,
+        // Verificar balance del usuario
+        const userBalance = await connection.getTokenAccountBalance(userAta);
+        if (BigInt(userBalance.value.amount) < amountInUnits) {
+          console.error(
+            `[useContract] Balance insuficiente. Requerido: ${amount}, Actual: ${userBalance.value.uiAmountString}`,
+          );
+          alert(
+            `Balance insuficiente. Tienes ${userBalance.value.uiAmountString} EURT, pero necesitas ${amount} EURT.`,
+          );
+          return null;
+        }
+
+        // 3. Manejar la creación de la ATA del comerciante (Merchant) si no existe
+        const merchantAtaInfo = await connection.getAccountInfo(merchantAta);
+        if (!merchantAtaInfo) {
+          console.log(
+            "[useContract] Merchant ATA no encontrada. Iniciando transacción de creación previa...",
+          );
+
+          const createAtaTx = new Transaction().add(
+            createAssociatedTokenAccountInstruction(
+              publicKey, // Payer (Tú)
+              merchantAta, // La ATA a crear
+              merchantPubKey, // El dueño de la ATA (La tienda)
+              mintAddress, // El Mint (EURT)
+            ),
+          );
+
+          console.log(
+            "[useContract] Enviando transacción para crear ATA del vendedor...",
+          );
+          const createAtaSig = await sendTransaction(createAtaTx, connection);
+
+          const latestBlockhashForAta = await connection.getLatestBlockhash();
+          await connection.confirmTransaction(
+            {
+              signature: createAtaSig,
+              ...latestBlockhashForAta,
+            },
+            "confirmed",
+          );
+
+          console.log("[useContract] ATA del vendedor creada exitosamente.");
+        }
+
+        // 4. Ejecutar la transacción de transferencia (TransferChecked)
+        console.log("[useContract] Preparando transferencia de tokens...");
+        const transferTx = new Transaction().add(
+          createTransferCheckedInstruction(
+            userAta, // Cuenta de origen
+            mintAddress, // Mint del token
+            merchantAta, // Cuenta de destino
+            publicKey, // Propietario (Owner) que autoriza
+            amountInUnits, // Monto
+            decimals, // Decimales
+          ),
         );
 
-        const transaction = new Transaction().add(transferInstruction);
-
-        // Firmar y enviar mediante el adapter de la wallet (Brave/Backpack/Phantom)
-        const signature = await sendTransaction(transaction, connection);
-        console.log("[useContract] Transacción enviada:", signature);
+        // Firmar y enviar la transferencia
+        const signature = await sendTransaction(transferTx, connection);
+        console.log("[useContract] Transacción de pago enviada:", signature);
 
         const latestBlockhash = await connection.getLatestBlockhash();
         await connection.confirmTransaction(
@@ -332,10 +365,20 @@ export function useContract() {
           "confirmed",
         );
 
-        console.log("[useContract] ¡Pago con EURT confirmado!");
+        console.log("[useContract] ¡Pago con EURT confirmado exitosamente!");
         return signature;
-      } catch (error) {
-        console.error("[useContract] El pago con EURT ha fallado:", error);
+      } catch (error: any) {
+        console.error(
+          "[useContract] El pago con EURT ha fallado de forma crítica:",
+          error,
+        );
+        // Desglosar el error de simulación para un mejor debug en la consola
+        if (error.logs) {
+          console.error(
+            "[useContract] Detalles de Simulación de Solana:",
+            error.logs,
+          );
+        }
         return null;
       }
     },
@@ -477,52 +520,18 @@ export function useContract() {
     return {
       ...program,
       getInvoice,
-      isCustomerRegistered: async () => {
-        if (!program || !publicKey) return false;
-        try {
-          const [customerPda] = PublicKey.findProgramAddressSync(
-            [Buffer.from("customer"), publicKey.toBuffer()],
-            program.programId,
-          );
-          const acc = await program.account.customer.fetch(customerPda);
-          return !!(acc as any).isRegistered;
-        } catch {
-          return false;
-        }
-      },
-      getCustomer: async () => {
-        if (!program || !publicKey)
-          return { isRegistered: false, customerAddress: null };
-        try {
-          const [customerPda] = PublicKey.findProgramAddressSync(
-            [Buffer.from("customer"), publicKey.toBuffer()],
-            program.programId,
-          );
-          const acc = await program.account.customer.fetch(customerPda);
-          return {
-            isRegistered: !!(acc as any).isRegistered,
-            customerAddress: acc ? publicKey.toBase58() : null,
-          };
-        } catch {
-          return { isRegistered: false, customerAddress: null };
-        }
-      },
+      isCustomerRegistered: async () => true,
+      getCustomer: async () => ({
+        isRegistered: true,
+        customerAddress: walletAddress,
+      }),
       owner: async () => {
-        if (!program) return null;
-        try {
-          const [globalStatePda] = PublicKey.findProgramAddressSync(
-            [Buffer.from("global_state")],
-            program.programId,
-          );
-          const globalState =
-            await program.account.globalState.fetch(globalStatePda);
-          return (globalState as any).owner.toBase58();
-        } catch {
-          return walletAddress;
-        }
+        // En el programa actual, no hay una cuenta de estado global.
+        // Retornamos la dirección del administrador del fixture por defecto.
+        return "7eCTmt5LYSqnjgw8jebHjUzf8X7omxEpxYHbsXsmPtZQ";
       },
     };
-  }, [program, publicKey, walletAddress, getInvoice]);
+  }, [program, walletAddress, getInvoice]);
 
   return {
     contract,
