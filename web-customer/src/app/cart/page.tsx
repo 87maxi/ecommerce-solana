@@ -33,6 +33,8 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState("0.00");
   const [isPaying, setIsPaying] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
   const {
     getCart,
     getAllProducts,
@@ -148,11 +150,12 @@ export default function CartPage() {
 
   const handleCheckout = async () => {
     if (!connected || !publicKey) {
-      alert("Por favor conecta tu wallet primero");
+      setPaymentError("Por favor conecta tu wallet primero.");
       return;
     }
 
     setIsPaying(true);
+    setPaymentError(null);
     try {
       // Obtener el ID de la empresa para el registro opcional
       const companyIds = [
@@ -167,25 +170,30 @@ export default function CartPage() {
       const merchantAddress = "7eCTmt5LYSqnjgw8jebHjUzf8X7omxEpxYHbsXsmPtZQ";
 
       console.log("Iniciando pago directo on-chain con EURT...");
-      const signature = await processPayment(merchantAddress, total);
+      const { signature, error } = await processPayment(merchantAddress, total);
 
       if (signature) {
         console.log("Pago exitoso. Firma:", signature);
-
+        setPaymentSuccess(true);
         // Limpiamos el carrito localmente
         await clearCart();
         setCartItems([]);
 
-        // Redirigimos a la página de éxito propia de la tienda
-        window.location.href = "/cart/success";
+        // Redirigimos a la página de éxito tras una breve pausa
+        setTimeout(() => {
+          window.location.href = `/cart/success?tx=${signature}`;
+        }, 1500);
       } else {
-        alert(
-          "El pago ha fallado. Verifica que tengas suficientes EURT en tu wallet.",
+        setPaymentError(
+          error ||
+            "El pago ha sido cancelado o ha fallado. Revisa tu balance de EURT y tu wallet.",
         );
       }
     } catch (error) {
       console.error("Error durante el checkout:", error);
-      alert("Hubo un problema al procesar la transacción con tu wallet.");
+      setPaymentError(
+        "Hubo un problema al procesar la transacción con tu wallet.",
+      );
     } finally {
       setIsPaying(false);
     }
@@ -391,9 +399,39 @@ export default function CartPage() {
               </span>
             </div>
 
+            {paymentError && (
+              <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg animate-in fade-in slide-in-from-top-2">
+                <p className="font-semibold mb-1">
+                  El pago no se pudo completar
+                </p>
+                <p className="opacity-90">{paymentError}</p>
+              </div>
+            )}
+
+            {paymentSuccess && (
+              <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-sm rounded-lg animate-in fade-in slide-in-from-top-2">
+                <p className="font-semibold text-center flex items-center justify-center gap-2">
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  ¡Pago Exitoso! Redirigiendo...
+                </p>
+              </div>
+            )}
+
             <button
               onClick={handleCheckout}
-              disabled={cartItems.length === 0 || isPaying}
+              disabled={cartItems.length === 0 || isPaying || paymentSuccess}
               className={cn(
                 "w-full flex items-center justify-center gap-2 py-4 rounded-xl",
                 "bg-primary text-primary-foreground font-bold text-lg",
