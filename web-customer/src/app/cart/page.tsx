@@ -19,11 +19,11 @@ import { cn } from "@/lib/utils";
 
 interface CartItem {
   product: {
-    id: number;
+    id: any;
     name: string;
     price: string;
     image: string;
-    companyId: number;
+    companyId: any;
   };
   quantity: number;
 }
@@ -34,6 +34,7 @@ export default function CartPage() {
   const [total, setTotal] = useState("0.00");
   const {
     getCart,
+    getAllProducts,
     calculateTotal: getCartTotal,
     removeFromCart,
     updateQuantity,
@@ -52,12 +53,25 @@ export default function CartPage() {
     const fetchCart = async () => {
       if (connected) {
         try {
-          const items = await getCart();
-          if (isMounted) {
-            setCartItems(items);
+          const [rawItems, allProducts] = await Promise.all([
+            getCart(),
+            getAllProducts(),
+          ]);
 
-            // Calculate total locally
-            const calculatedTotal = items.reduce(
+          const joinedItems = rawItems
+            .map((item: any) => {
+              const product = allProducts.find(
+                (p: any) => p.id === item.productId,
+              );
+              if (!product) return null;
+              return { product, quantity: item.quantity };
+            })
+            .filter(Boolean) as CartItem[];
+
+          if (isMounted) {
+            setCartItems(joinedItems);
+
+            const calculatedTotal = joinedItems.reduce(
               (acc: number, item: CartItem) => {
                 return acc + parseFloat(item.product.price) * item.quantity;
               },
@@ -82,7 +96,7 @@ export default function CartPage() {
     return () => {
       isMounted = false;
     };
-  }, [connected, getCart]);
+  }, [connected, getCart, getAllProducts]);
 
   // Update total when cart items change locally
   useEffect(() => {
@@ -92,7 +106,7 @@ export default function CartPage() {
     setTotal(calculatedTotal.toFixed(2));
   }, [cartItems]);
 
-  const handleRemoveFromCart = async (productId: number) => {
+  const handleRemoveFromCart = async (productId: any) => {
     try {
       const success = await removeFromCart(productId);
       if (success) {
@@ -105,10 +119,7 @@ export default function CartPage() {
     }
   };
 
-  const handleUpdateQuantity = async (
-    productId: number,
-    newQuantity: number,
-  ) => {
+  const handleUpdateQuantity = async (productId: any, newQuantity: number) => {
     if (newQuantity === 0) {
       handleRemoveFromCart(productId);
       return;

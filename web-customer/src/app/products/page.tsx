@@ -8,8 +8,8 @@ import { ShoppingCart, Loader2, Euro, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Product = {
-  id: number;
-  companyId: number;
+  id: any;
+  companyId: any;
   name: string;
   description: string;
   price: string;
@@ -44,7 +44,7 @@ export default function ProductsPage() {
     fetchProducts();
   }, [getAllProducts]);
 
-  const handleAddToCart = async (productId: number) => {
+  const handleAddToCart = async (productId: string) => {
     if (!isConnected) {
       connectWallet();
       return;
