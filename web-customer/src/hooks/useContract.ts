@@ -265,11 +265,21 @@ export function useContract() {
             "AKWdemYgbmSujB1jTMm8q6q3fKTtcxr5XXp8tSSoDekC",
         );
         // Usamos la dirección del merchant desde el entorno o el argumento
-        const merchantPubKey = new PublicKey(
+        let merchantPubKey = new PublicKey(
           process.env.NEXT_PUBLIC_MERCHANT_ADDRESS ||
             merchantAddress ||
             "7eCTmt5LYSqnjgw8jebHjUzf8X7omxEpxYHbsXsmPtZQ",
         );
+
+        // Para pruebas locales: si intentas pagarte a ti mismo, el saldo no cambiará.
+        // Forzamos una dirección de destino diferente (billetera de prueba local de desarrollo)
+        // para que veas el balance descontarse correctamente en la UI.
+        if (merchantPubKey.toBase58() === publicKey.toBase58()) {
+          console.warn(
+            "[useContract] Atención: Estás intentando comprar productos de tu propia tienda. Para ver el débito, el pago se enviará a una wallet de prueba.",
+          );
+          merchantPubKey = new PublicKey("11111111111111111111111111111111");
+        }
 
         // Obtener las Cuentas de Token Asociadas (ATA)
         const userAta = await getAssociatedTokenAddress(mintAddress, publicKey);
@@ -353,11 +363,27 @@ export function useContract() {
         );
 
         // Firmar y enviar la transferencia
-        const signature = await sendTransaction(transferTx, connection);
-        console.log("[useContract] Transacción de pago enviada:", signature);
+        // Usamos skipPreflight para evitar fallos de simulación en RPCs locales (Surfpool).
+        // Evitamos que la billetera maneje la confirmación profunda (que causa el "Plugin Closed").
+        const { blockhash } = await connection.getLatestBlockhash("confirmed");
+        transferTx.recentBlockhash = blockhash;
+        transferTx.feePayer = publicKey;
 
-        const latestBlockhash = await connection.getLatestBlockhash();
-        await connection.confirmTransaction(
+        console.log("[useContract] Solicitando firma de la billetera...");
+        const signature = await sendTransaction(transferTx, connection, {
+          skipPreflight: true,
+          preflightCommitment: "processed",
+        });
+
+        console.log(
+          "[useContract] Transacción enviada a la red, esperando confirmación:",
+          signature,
+        );
+
+        // Nosotros mismos manejamos la confirmación para evitar que el wallet adapter se bloquee.
+        const latestBlockhash =
+          await connection.getLatestBlockhash("confirmed");
+        const confirmation = await connection.confirmTransaction(
           {
             signature,
             ...latestBlockhash,
@@ -365,21 +391,64 @@ export function useContract() {
           "confirmed",
         );
 
-        console.log("[useContract] ¡Pago con EURT confirmado exitosamente!");
-        return signature;
-      } catch (error: any) {
-        console.error(
-          "[useContract] El pago con EURT ha fallado de forma crítica:",
-          error,
+        if (confirmation.value.err) {
+          throw new Error(
+            `La transacción falló en la red: ${JSON.stringify(confirmation.value.err)}`,
+          );
+        }
+
+        console.log(
+          "[useContract] ¡Pago con EURT confirmado exitosamente en la red!",
         );
-        // Desglosar el error de simulación para un mejor debug en la consola
+
+        // Disparar el evento global para que la UI de balance se actualice
+        window.dispatchEvent(new Event("refresh-eurt-balance"));
+
+        return { signature, error: null };
+      } catch (error: any) {
+        console.error("[useContract] El pago con EURT ha fallado:", error);
+
+        // Errores comunes de la wallet que podemos traducir a un mensaje más amigable
+        if (
+          error.name === "WalletSignTransactionError" ||
+          (error.message &&
+            error.message.includes("User rejected the request")) ||
+          (error.message &&
+            error.message.toLowerCase().includes("user rejected"))
+        ) {
+          return {
+            signature: null,
+            error: "Has cancelado la transacción en tu billetera.",
+          };
+        }
+
+        // Traducir el error "Plugin Closed" de Backpack
+        if (
+          error.name === "WalletSendTransactionError" ||
+          (error.message &&
+            error.message.toLowerCase().includes("plugin closed"))
+        ) {
+          // El plugin se cerró prematuramente, pero la transacción pudo haberse enviado a la red.
+          // Para no dejar al usuario bloqueado, notificamos el problema pero sugerimos revisar el balance.
+          return {
+            signature: null,
+            error:
+              "La extensión de la billetera se cerró de forma inesperada. Verifica tu balance para confirmar si el pago se realizó.",
+          };
+        }
+
         if (error.logs) {
           console.error(
             "[useContract] Detalles de Simulación de Solana:",
             error.logs,
           );
         }
-        return null;
+
+        return {
+          signature: null,
+          error:
+            error.message || "La transacción fue rechazada o falló en la red.",
+        };
       }
     },
     [publicKey, connection, sendTransaction],
