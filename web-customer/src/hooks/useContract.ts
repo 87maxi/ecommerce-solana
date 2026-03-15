@@ -1,17 +1,26 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
+import {
+  Connection,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+} from "@solana/web3.js";
 import { Program, AnchorProvider, Idl, BN } from "@coral-xyz/anchor";
 import { Buffer } from "buffer";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import {
+  getAssociatedTokenAddress,
+  createTransferCheckedInstruction,
+} from "@solana/spl-token";
 import EcommerceABI from "@/contracts/abis/EcommerceABI.json";
 
 const PROGRAM_ID = process.env.NEXT_PUBLIC_ECOMMERCE_CONTRACT_ADDRESS || "";
 
 export function useContract() {
   const { connection } = useConnection();
-  const { publicKey } = useWallet();
+  const { publicKey, sendTransaction } = useWallet();
   const walletAddress = publicKey?.toBase58();
 
   const [program, setProgram] = useState<Program | null>(null);
@@ -263,6 +272,76 @@ export function useContract() {
     }
   }, [program, publicKey, getCart, getAllProducts]);
 
+  /**
+   * Realiza un pago directo on-chain utilizando tokens EURT (SPL)
+   * @param merchantAddress La wallet de destino (vendedor)
+   * @param amount El monto total en EURT (formato string decimal)
+   * @returns El hash de la transacción o null si falla
+   */
+  const processPayment = useCallback(
+    async (merchantAddress: string, amount: string) => {
+      if (!publicKey || !connection || !sendTransaction) return null;
+
+      try {
+        console.log(
+          "[useContract] Iniciando transferencia de EURT on-chain...",
+        );
+
+        // Dirección del Mint de EURT (desde variables de entorno o fallback)
+        const mintAddress = new PublicKey(
+          process.env.NEXT_PUBLIC_EUROTOKEN_MINT ||
+            "8yCgaxbTDGiWe6XuMAq6XUimC8ovSx5J4GEJnEKuhGk5",
+        );
+        const merchantPubKey = new PublicKey(merchantAddress);
+
+        // Obtener las Cuentas de Token Asociadas (ATA)
+        const userAta = await getAssociatedTokenAddress(mintAddress, publicKey);
+        const merchantAta = await getAssociatedTokenAddress(
+          mintAddress,
+          merchantPubKey,
+        );
+
+        // Calcular el monto en unidades base (EURT suele usar 6 decimales)
+        const decimals = 6;
+        const amountInUnits = BigInt(
+          Math.round(parseFloat(amount) * Math.pow(10, decimals)),
+        );
+
+        // Construir la instrucción de transferencia SPL
+        const transferInstruction = createTransferCheckedInstruction(
+          userAta,
+          mintAddress,
+          merchantAta,
+          publicKey,
+          amountInUnits,
+          decimals,
+        );
+
+        const transaction = new Transaction().add(transferInstruction);
+
+        // Firmar y enviar mediante el adapter de la wallet (Brave/Backpack/Phantom)
+        const signature = await sendTransaction(transaction, connection);
+        console.log("[useContract] Transacción enviada:", signature);
+
+        const latestBlockhash = await connection.getLatestBlockhash();
+        await connection.confirmTransaction(
+          {
+            signature,
+            ...latestBlockhash,
+          },
+          "confirmed",
+        );
+
+        console.log("[useContract] ¡Pago con EURT confirmado!");
+        return signature;
+      } catch (error) {
+        console.error("[useContract] El pago con EURT ha fallado:", error);
+        return null;
+      }
+    },
+    [publicKey, connection, sendTransaction],
+  );
+
   const createInvoice = useCallback(
     async (companyId: number) => {
       if (!program || !publicKey) return null;
@@ -460,5 +539,6 @@ export function useContract() {
     getCartItemCount,
     getInvoice,
     checkAndRegisterCustomer,
+    processPayment,
   };
 }

@@ -32,6 +32,7 @@ export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState("0.00");
+  const [isPaying, setIsPaying] = useState(false);
   const {
     getCart,
     getAllProducts,
@@ -39,6 +40,8 @@ export default function CartPage() {
     removeFromCart,
     updateQuantity,
     createInvoice,
+    processPayment,
+    clearCart,
   } = useContract();
   const { connected, publicKey } = useWallet();
   const {
@@ -144,13 +147,14 @@ export default function CartPage() {
   };
 
   const handleCheckout = async () => {
-    if (!connected) {
+    if (!connected || !publicKey) {
       alert("Por favor conecta tu wallet primero");
       return;
     }
 
+    setIsPaying(true);
     try {
-      // Get unique company IDs from cart items
+      // Obtener el ID de la empresa para el registro opcional
       const companyIds = [
         ...new Set(cartItems.map((item) => item.product.companyId)),
       ];
@@ -159,38 +163,31 @@ export default function CartPage() {
         throw new Error("No items in cart");
       }
 
-      // For now, create invoice for the first company
-      // In a real app, you'd handle multiple companies or group them
-      const invoiceId = await createInvoice(companyIds[0]);
+      // En esta demo, usamos una wallet de destino fija (vendedor del fixture)
+      const merchantAddress = "7eCTmt5LYSqnjgw8jebHjUzf8X7omxEpxYHbsXsmPtZQ";
 
-      if (invoiceId && connected && publicKey) {
-        const totalAmount = cartItems.reduce((acc, item) => {
-          return acc + parseFloat(item.product.price) * item.quantity;
-        }, 0);
+      console.log("Iniciando pago directo on-chain con EURT...");
+      const signature = await processPayment(merchantAddress, total);
 
-        const compraUrl =
-          process.env.NEXT_PUBLIC_COMPRAS_STABLEBOIN_URL ||
-          "http://localhost:3033";
-        const redirectUrl = `${window.location.origin}/cart/success`;
+      if (signature) {
+        console.log("Pago exitoso. Firma:", signature);
 
-        const params = new URLSearchParams({
-          amount: totalAmount.toString(),
-          invoice: invoiceId.toString(),
-          walletAddress: publicKey.toString(),
-          redirect: redirectUrl,
-        });
-
-        // Clear local cart state
+        // Limpiamos el carrito localmente
+        await clearCart();
         setCartItems([]);
 
-        // Redirect to EURT purchase page
-        window.location.href = `${compraUrl}?${params.toString()}`;
-        console.log("Redirecting to EURT purchase for invoice:", invoiceId);
+        // Redirigimos a la página de éxito propia de la tienda
+        window.location.href = "/cart/success";
       } else {
-        throw new Error("Failed to create invoice");
+        alert(
+          "El pago ha fallado. Verifica que tengas suficientes EURT en tu wallet.",
+        );
       }
     } catch (error) {
-      console.error("Error during checkout:", error);
+      console.error("Error durante el checkout:", error);
+      alert("Hubo un problema al procesar la transacción con tu wallet.");
+    } finally {
+      setIsPaying(false);
     }
   };
 
@@ -396,7 +393,7 @@ export default function CartPage() {
 
             <button
               onClick={handleCheckout}
-              disabled={cartItems.length === 0}
+              disabled={cartItems.length === 0 || isPaying}
               className={cn(
                 "w-full flex items-center justify-center gap-2 py-4 rounded-xl",
                 "bg-primary text-primary-foreground font-bold text-lg",
@@ -405,8 +402,17 @@ export default function CartPage() {
                 "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none",
               )}
             >
-              <CreditCard className="w-5 h-5" />
-              Pagar con EURT
+              {isPaying ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Procesando Pago...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="w-5 h-5" />
+                  Pagar con EURT
+                </>
+              )}
             </button>
 
             <div className="mt-4 p-3 bg-blue-900/20 rounded-lg border border-blue-500/30">
@@ -416,7 +422,7 @@ export default function CartPage() {
               </p>
             </div>
             <p className="text-xs text-center text-muted-foreground mt-3">
-              Serás redirigido a nuestra pasarela descentralizada.
+              La transacción se realizará directamente desde tu wallet.
             </p>
           </div>
         </div>
