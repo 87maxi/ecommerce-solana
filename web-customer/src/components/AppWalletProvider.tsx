@@ -12,38 +12,38 @@ import { BackpackWalletAdapter } from "@solana/wallet-adapter-backpack";
 import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
 import { clusterApiUrl } from "@solana/web3.js";
 
-// Los estilos se han movido a src/app/layout.tsx para evitar problemas de hidratación
+// Los estilos de la wallet se importan en src/app/layout.tsx para evitar errores de hidratación.
 
 export function AppWalletProvider({ children }: { children: React.ReactNode }) {
+  // La red se puede configurar a 'devnet', 'testnet', o 'mainnet-beta'.
+  // Para este proyecto, usamos un endpoint RPC local que sobreescribe la red.
   const network = WalletAdapterNetwork.Devnet;
 
   const endpoint = useMemo(() => {
-    // Usamos el host RPC configurado en .env para Surfpool/Localnet
-    return (
-      process.env.NEXT_PUBLIC_SOLANA_RPC_HOST ||
-      process.env.NEXT_PUBLIC_RPC_URL ||
-      clusterApiUrl(network)
-    );
+    return process.env.NEXT_PUBLIC_SOLANA_RPC_HOST || clusterApiUrl(network);
   }, [network]);
 
-  // Inicialización de adaptadores de billetera específicos para reducir el tamaño del bundle
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
       new BackpackWalletAdapter(),
       new SolflareWalletAdapter(),
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [network],
+    [], // Las wallets no dependen de ninguna variable reactiva externa
   );
 
   const onError = useCallback((error: WalletError) => {
-    console.error("[Wallet Error]:", error.message ? error.message : error);
-  }, []);
+    // Maneja errores de la wallet de forma segura, como rechazos o fallos de conexión.
+    // Solo logueamos el mensaje para no llenar la consola con objetos de error enteros
+    console.warn(
+      "[WalletAdapter Warning]:",
+      error.message ? error.message : error,
+    );
+  }, []); // onError tampoco depende de variables externas, se crea una vez
 
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect onError={onError}>
+      <WalletProvider wallets={wallets} onError={onError} autoConnect>
         <WalletModalProvider>{children}</WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>
