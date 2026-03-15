@@ -1,6 +1,7 @@
 "use client";
 
 import "@/app/globals.css";
+import "@solana/wallet-adapter-react-ui/styles.css";
 import WalletConnectHeader from "@/components/WalletConnectHeader";
 import MobileMenu from "@/components/MobileMenu";
 import { useContract } from "@/hooks/useContract";
