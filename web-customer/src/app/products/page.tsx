@@ -4,7 +4,13 @@ import { useState, useEffect } from "react";
 import { useContract } from "@/hooks/useContract";
 import { useWallet } from "@/hooks/useWallet";
 import { useEuroTokenBalance } from "@/hooks/useEuroTokenBalance";
-import { ShoppingCart, Loader2, Euro, Image as ImageIcon } from "lucide-react";
+import {
+  ShoppingCart,
+  Loader2,
+  Euro,
+  Image as ImageIcon,
+  Check,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Product = {
@@ -21,6 +27,7 @@ type Product = {
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [addedItems, setAddedItems] = useState<Record<string, boolean>>({});
   const { getAllProducts, addToCart } = useContract();
   const { isConnected, connect: connectWallet } = useWallet();
   const {
@@ -53,7 +60,14 @@ export default function ProductsPage() {
     try {
       const success = await addToCart(productId, 1);
       if (success) {
-        // You might want to show a success toast or update UI
+        setAddedItems((prev) => ({ ...prev, [productId]: true }));
+        setTimeout(() => {
+          setAddedItems((prev) => {
+            const next = { ...prev };
+            delete next[productId];
+            return next;
+          });
+        }, 2000);
         console.log("Product added to cart successfully");
       }
     } catch (error) {
@@ -163,14 +177,24 @@ export default function ProductsPage() {
                 <button
                   onClick={() => handleAddToCart(product.id)}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-full",
-                    "bg-primary text-primary-foreground font-medium text-sm",
-                    "transition-all duration-200 hover:bg-primary/90 hover:scale-105",
-                    "shadow-lg shadow-primary/20 hover:shadow-primary/30",
+                    "font-medium text-sm transition-all duration-200 hover:scale-105 shadow-lg",
+                    addedItems[product.id]
+                      ? "bg-emerald-500 text-white shadow-emerald-500/20"
+                      : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary/20 hover:shadow-primary/30",
                   )}
+                  disabled={!!addedItems[product.id]}
                 >
-                  <ShoppingCart className="w-4 h-4" />
-                  Add to Cart
+                  {addedItems[product.id] ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      Added!
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="w-4 h-4" />
+                      Add to Cart
+                    </>
+                  )}
                 </button>
               </div>
             </div>
