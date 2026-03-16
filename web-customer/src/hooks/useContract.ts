@@ -261,7 +261,8 @@ export function useContract() {
         // Dirección del Mint de EURT (desde variables de entorno o fallback)
         // La dirección AKWdem... es el Mint real verificado en Surfpool.
         const mintAddress = new PublicKey(
-          process.env.NEXT_PUBLIC_EUROTOKEN_MINT ||
+          process.env.NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS ||
+            process.env.NEXT_PUBLIC_EUROTOKEN_MINT ||
             "AKWdemYgbmSujB1jTMm8q6q3fKTtcxr5XXp8tSSoDekC",
         );
         // Usamos la dirección del merchant desde el entorno o el argumento

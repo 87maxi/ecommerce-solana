@@ -5,6 +5,10 @@ import { PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 
+/**
+ * Hook para obtener y monitorear el balance de EURT (EuroToken) de la wallet conectada.
+ * Utiliza variables de entorno consistentes con el script de despliegue y otros hooks.
+ */
 export function useEuroTokenBalance() {
   const [balance, setBalance] = useState<string>("0");
   const [loading, setLoading] = useState(true);
@@ -13,39 +17,54 @@ export function useEuroTokenBalance() {
   const { connection } = useConnection();
   const { publicKey } = useWallet();
 
-  // Se crea una única función estable para obtener el balance
   const fetchBalance = useCallback(async () => {
     if (!connection || !publicKey) {
+      console.log("[useEuroTokenBalance] No hay conexión o publicKey:", {
+        connection: !!connection,
+        publicKey: publicKey?.toBase58(),
+      });
       setBalance("0");
       setLoading(false);
       return;
     }
 
-    // No reiniciar el estado de carga en cada sondeo para evitar parpadeos
-    // setLoading(true);
     setError(null);
 
     try {
-      const mintAddressStr = process.env.NEXT_PUBLIC_EUROTOKEN_MINT;
-      if (!mintAddressStr) {
-        throw new Error("Mint de EuroToken no configurado en el entorno");
-      }
+      // Priorizamos NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS (usada en deploy.sh y addresses.ts)
+      // seguida de NEXT_PUBLIC_EUROTOKEN_MINT por compatibilidad.
+      // Fallback a la dirección verificada en Surfpool.
+      const mintAddressStr =
+        process.env.NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS ||
+        process.env.NEXT_PUBLIC_EUROTOKEN_MINT ||
+        "AKWdemYgbmSujB1jTMm8q6q3fKTtcxr5XXp8tSSoDekC";
 
+      console.log("[useEuroTokenBalance] Usando Mint:", mintAddressStr);
       const mint = new PublicKey(mintAddressStr);
       const ata = await getAssociatedTokenAddress(mint, publicKey);
+      console.log("[useEuroTokenBalance] ATA:", ata.toBase58());
 
-      const balanceInfo = await connection.getTokenAccountBalance(ata);
-      setBalance(balanceInfo.value.uiAmountString || "0");
-    } catch (e) {
-      // Si la ATA no existe, el balance es 0
+      try {
+        const balanceInfo = await connection.getTokenAccountBalance(ata);
+        console.log("[useEuroTokenBalance] Balance Info:", balanceInfo.value);
+        setBalance(balanceInfo.value.uiAmountString || "0");
+      } catch (e) {
+        console.log(
+          "[useEuroTokenBalance] Error al obtener balance (posiblemente ATA inexistente):",
+          e,
+        );
+        // Si la ATA no existe, el balance es 0
+        setBalance("0");
+      }
+    } catch (e: any) {
+      console.error("[useEuroTokenBalance] Error:", e);
+      setError("Error cargando balance");
       setBalance("0");
     } finally {
-      // Solo desactivar el estado de carga inicial la primera vez
-      if (loading) setLoading(false);
+      setLoading(false);
     }
-  }, [connection, publicKey, loading]);
+  }, [connection, publicKey]);
 
-  // Este efecto se encarga de toda la lógica de actualización
   useEffect(() => {
     fetchBalance(); // Carga inicial
 

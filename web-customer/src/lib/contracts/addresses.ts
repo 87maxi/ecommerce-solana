@@ -3,7 +3,9 @@
 export const ECOMMERCE_CONTRACT_ADDRESS =
   process.env.NEXT_PUBLIC_ECOMMERCE_CONTRACT_ADDRESS || "";
 export const EUROTOKEN_CONTRACT_ADDRESS =
-  process.env.NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS || "";
+  process.env.NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS ||
+  process.env.NEXT_PUBLIC_EUROTOKEN_MINT ||
+  "AKWdemYgbmSujB1jTMm8q6q3fKTtcxr5XXp8tSSoDekC";
 
 /**
  * Obtiene la dirección del programa o token basándose en el Chain ID.
