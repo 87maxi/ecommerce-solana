@@ -3,82 +3,98 @@ import { Product } from '../types';
 export type ProductData = {
   name: string;
   description: string;
-  price: bigint | string;
+  price: bigint | string | any;
   image: string;
-  stock: bigint | number;
+  stock: bigint | number | any;
   active: boolean;
-  companyId: bigint | string;
+  companyId: bigint | string | any;
 };
 
-export function normalizeProduct(
-  productResult: ProductData,
-  productId: bigint
-): Product {
-  // Handle possible BigNumber values from ethers
-  const price =
-    typeof productResult.price === 'bigint'
-      ? productResult.price.toString()
-      : productResult.price;
-  const companyId =
-    typeof productResult.companyId === 'bigint'
-      ? productResult.companyId.toString()
-      : productResult.companyId;
+/**
+ * Normaliza los datos de un producto provenientes del contrato (Ethers o Anchor).
+ * Soporta IDs en formato string (PublicKeys de Solana) y BigInt (EVM).
+ * Maneja de forma segura entradas nulas, devolviendo null.
+ */
+export function normalizeProduct(productResult: any, productId: any): Product | null {
+  if (!productResult) {
+    return null;
+  }
 
-  // Ensure values are strings, not arrays
-  const cleanedPrice = Array.isArray(price)
-    ? price[0].toString()
-    : price.toString();
-  const cleanedCompanyId = Array.isArray(companyId)
-    ? companyId[0].toString()
-    : companyId.toString();
+  // Normalizar precio (asumiendo 6 decimales para EURT)
+  const rawPrice = productResult.price?.toString() || '0';
+  const price = (parseFloat(rawPrice) / 1000000).toFixed(2);
+
+  // Normalizar companyId (soporta campo 'company' de Anchor o 'companyId' de Ethers)
+  const companyId =
+    productResult.companyId?.toString() || (productResult as any).company?.toString() || '';
+
+  // Normalizar stock (soporta BN de Anchor o number de Ethers)
+  const stock = productResult.stock?.toNumber
+    ? productResult.stock.toNumber()
+    : Number(productResult.stock || 0);
+
+  // Normalizar estado activo
+  const isActive = productResult.active ?? (productResult as any).isActive ?? true;
 
   return {
     id: productId.toString(),
-    companyId: cleanedCompanyId,
-    name: productResult.name,
-    description: productResult.description,
-    price: (parseInt(cleanedPrice) / 1000000).toFixed(2), // Assuming 6 decimals
-    imageHash: productResult.image || '',
-    stock: Number(productResult.stock),
-    isActive: productResult.active,
-  };
+    companyId: companyId,
+    name: productResult.name || '',
+    description: productResult.description || '',
+    price: price,
+    image: productResult.image || '',
+    imageHash: productResult.image || '', // Compatibilidad con código antiguo
+    stock: stock,
+    active: isActive,
+    isActive: isActive,
+  } as any;
 }
 
+/**
+ * Normaliza una respuesta que se espera sea un array.
+ * Maneja arrays nativos, arrays anidados de ethers y objetos ProxyResult.
+ */
 export function normalizeArrayResponse(response: any): any[] {
   if (!response) return [];
 
-  // Handle ethers ProxyResult which behaves like an array
-  // We can convert it to a regular array using Array.from or spread
-  const arrayResponse = Array.isArray(response)
-    ? response
-    : (typeof response === 'object' && 'length' in response)
-      ? Array.from(response)
-      : [response];
-
-  if (arrayResponse.length === 0) return [];
-
-  // Check if it's a nested array (e.g. [[1, 2, 3]])
-  // Use explicit check for array-like structure on the first element
-  const firstItem = arrayResponse[0];
-  if (Array.isArray(firstItem) || (typeof firstItem === 'object' && firstItem !== null && 'length' in firstItem && typeof firstItem !== 'bigint')) {
-    return Array.from(firstItem);
+  if (Array.isArray(response)) {
+    if (response.length > 0 && Array.isArray(response[0])) {
+      return response[0];
+    }
+    return response;
   }
 
-  return arrayResponse;
+  if (typeof response === 'object' && 'length' in response) {
+    return Array.from(response);
+  }
+
+  return [response];
 }
 
-export function normalizeCompany(companyResult: any, companyId: string): any {
-  const owner =
-    companyResult.owner?.toString() || companyResult[1]?.toString() || '';
+/**
+ * Normaliza los datos de una empresa.
+ */
+export function normalizeCompany(companyResult: any, companyId: any): any {
+  if (!companyResult) return null;
+
+  const id = companyId?.toString() || '';
+  const owner = companyResult.owner?.toString() || '';
+  const isActive =
+    companyResult.active ?? companyResult.isActive ?? (companyResult as any).is_active ?? true;
+
+  let createdAt = new Date().toISOString();
+  if (companyResult.createdAt) {
+    const timestamp = Number(companyResult.createdAt.toString());
+    createdAt = new Date(timestamp * 1000).toISOString();
+  }
 
   return {
-    id: companyId,
+    id,
     owner,
-    name: companyResult.name,
-    description: companyResult.description,
-    isActive: companyResult.active,
-    createdAt: companyResult.createdAt
-      ? new Date(Number(companyResult.createdAt) * 1000).toISOString()
-      : new Date().toISOString(),
+    name: companyResult.name || '',
+    description: companyResult.description || '',
+    isActive,
+    active: isActive,
+    createdAt,
   };
 }

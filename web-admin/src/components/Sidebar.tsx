@@ -2,13 +2,23 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { NAVIGATION } from '../lib/routes';
+import { NAVIGATION, ROUTES } from '../lib/routes';
 import { WalletInfo } from './WalletInfo';
 import { ConnectWalletButton } from './ConnectWalletButton';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useRole } from '../contexts/RoleContext';
 import { useIsMounted } from '../hooks/useIsMounted';
+import {
+  LayoutDashboard,
+  Building,
+  ShoppingBag,
+  Users,
+  ShieldCheck,
+  Menu,
+  X,
+  ChevronRight,
+} from 'lucide-react';
 
 export function Sidebar() {
   const isMounted = useIsMounted();
@@ -17,204 +27,179 @@ export function Sidebar() {
   const { roleInfo } = useRole();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Durante el SSR y el primer renderizado en el cliente, isMounted será false.
-  // Renderizamos el estado de desconexión para que coincida con lo que generó el servidor
-  // y evitar errores de hidratación.
+  // Filtrar y mejorar navegación según el rol del usuario
+  const filteredNavigation = useMemo(() => {
+    // Definición base de navegación filtrada por rol
+    let nav = [...NAVIGATION].filter(item => {
+      if (!item.roles || item.roles.length === 0) return true;
+      if (roleInfo.role === 'admin') return true;
+      return item.roles.includes(roleInfo.role as any);
+    });
+
+    // Si es dueño de empresa, añadir acceso directo a su empresa específica
+    if (roleInfo.role === 'company_owner' && roleInfo.companyId) {
+      const companyIndex = nav.findIndex(item => item.name === 'Productos');
+      const myCompanyItem = {
+        name: 'Mi Empresa',
+        href: ROUTES.COMPANY_DETAIL(roleInfo.companyId),
+        icon: (props: any) => <Building {...props} />,
+        roles: ['company_owner'] as any[],
+      };
+
+      // Insertar antes de productos para mejorar el flujo UX del dueño
+      if (companyIndex !== -1) {
+        nav.splice(companyIndex, 0, myCompanyItem);
+      } else {
+        nav.push(myCompanyItem);
+      }
+    }
+
+    return nav;
+  }, [roleInfo]);
+
+  // Pantalla de estado desconectado (Evita hydration mismatch)
   if (!isMounted || !connected) {
     return (
-      <div className="hidden md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 sidebar-gradient border-r border-cyan-500/20">
+      <div className="hidden md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 bg-slate-900 border-r border-cyan-500/10">
         <div className="flex flex-col flex-grow justify-center items-center p-8">
-          <div className="w-24 h-24 mb-8 relative">
-            <div className="absolute inset-0 bg-cyan-500 rounded-full blur-xl opacity-20 animate-pulse"></div>
-            <div className="w-full h-full bg-gradient-to-br from-cyan-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg shadow-cyan-500/30 ring-4 ring-slate-900">
-              <svg
-                className="w-12 h-12 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                />
-              </svg>
+          <div className="w-20 h-20 mb-8 relative">
+            <div className="absolute inset-0 bg-cyan-500 rounded-2xl blur-xl opacity-20 animate-pulse"></div>
+            <div className="w-full h-full bg-slate-800 rounded-2xl flex items-center justify-center border border-slate-700 shadow-2xl relative z-10">
+              <ShieldCheck className="w-10 h-10 text-cyan-500" />
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2 text-center">Acceso Seguro</h2>
-          <p className="text-slate-400 text-center mb-10 text-sm">
-            Conecta tu wallet de Solana para acceder al panel de administración del E-Commerce.
+          <h2 className="text-xl font-bold text-white mb-2 text-center tracking-tight">
+            Acceso Restringido
+          </h2>
+          <p className="text-slate-500 text-center mb-10 text-xs leading-relaxed">
+            Conecta tu billetera Solana para autenticarte en el panel de control.
           </p>
-          <div className="w-full px-4">
+          <div className="w-full">
             <ConnectWalletButton />
           </div>
         </div>
-        <div className="p-4 border-t border-cyan-500/20 bg-slate-900/50 backdrop-blur-sm">
-          <div className="flex items-center justify-center space-x-2 text-xs text-slate-500">
-            <svg
-              className="w-4 h-4 text-emerald-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-              />
-            </svg>
-            <span>Conexión descentralizada segura</span>
+        <div className="p-6 border-t border-slate-800 bg-slate-900/50">
+          <div className="flex items-center justify-center space-x-2 text-[10px] uppercase tracking-widest font-bold text-slate-600">
+            <div className="w-1.5 h-1.5 rounded-full bg-slate-700"></div>
+            <span>Protocolo de Seguridad</span>
           </div>
         </div>
       </div>
     );
   }
 
-  // Filtrar navegación según el rol del usuario
-  const filteredNavigation = NAVIGATION.filter(item => {
-    if (!item.roles || item.roles.length === 0) return true;
-    if (roleInfo.role === 'admin') return true;
-    return item.roles.includes(roleInfo.role as any);
-  });
+  const NavLink = ({ item, onClick }: { item: any; onClick?: () => void }) => {
+    const isActive = pathname === item.href;
+    const Icon = item.icon;
+
+    return (
+      <Link
+        href={item.href}
+        onClick={onClick}
+        className={`
+          group flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all duration-200
+          ${
+            isActive
+              ? 'bg-gradient-to-r from-cyan-500/10 to-purple-500/10 text-cyan-400 border border-cyan-500/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]'
+              : 'text-slate-500 hover:bg-slate-800/60 hover:text-slate-200'
+          }
+        `}
+      >
+        <Icon
+          className={`mr-3 h-5 w-5 flex-shrink-0 transition-colors duration-200 ${isActive ? 'text-cyan-400' : 'text-slate-500 group-hover:text-slate-300'}`}
+        />
+        {item.name}
+        {isActive && <ChevronRight className="ml-auto w-4 h-4 text-cyan-400/50" />}
+      </Link>
+    );
+  };
 
   return (
     <>
-      {/* Mobile Sidebar */}
+      {/* Mobile Header/Menu Toggle */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 z-30 px-4 flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 rounded-lg bg-cyan-500 flex items-center justify-center">
+            <LayoutDashboard className="w-5 h-5 text-slate-900" />
+          </div>
+          <span className="font-black text-white tracking-tighter">ADMIN.</span>
+        </div>
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="p-2 text-slate-400 hover:text-white"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
       <div className={`md:hidden fixed inset-0 z-40 ${isMobileMenuOpen ? 'block' : 'hidden'}`}>
         <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm"
           onClick={() => setIsMobileMenuOpen(false)}
         />
-        <div className="fixed inset-y-0 left-0 w-64 bg-slate-900 border-r border-cyan-500/20 flex flex-col">
-          <div className="h-16 flex items-center justify-between px-4 border-b border-cyan-500/20 bg-slate-900/50">
-            <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-              Menú
-            </span>
+        <div className="fixed inset-y-0 left-0 w-80 bg-slate-900 border-r border-slate-800 flex flex-col shadow-2xl">
+          <div className="h-20 flex items-center justify-between px-6 border-b border-slate-800">
+            <span className="text-xl font-black text-white tracking-tight italic">PANEL</span>
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="text-slate-400 hover:text-white"
+              className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              <X className="w-6 h-6" />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            {filteredNavigation.map(item => {
-              const isActive = pathname === item.href;
-              const Icon = item.icon;
-
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={`
-                    group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200
-                    ${
-                      isActive
-                        ? 'bg-gradient-to-r from-cyan-500/10 to-purple-500/10 text-cyan-400 border border-cyan-500/20 shadow-inner'
-                        : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
-                    }
-                  `}
-                >
-                  <Icon
-                    className={`mr-3 h-5 w-5 flex-shrink-0 transition-colors duration-200 ${isActive ? 'text-cyan-400' : 'text-slate-500 group-hover:text-slate-300'}`}
-                  />
-                  {item.name}
-                </Link>
-              );
-            })}
+          <div className="flex-1 overflow-y-auto p-6 space-y-2">
+            {filteredNavigation.map(item => (
+              <NavLink key={item.name} item={item} onClick={() => setIsMobileMenuOpen(false)} />
+            ))}
           </div>
-          <div className="p-4 border-t border-cyan-500/20 bg-slate-900/50">
+          <div className="p-6 border-t border-slate-800 bg-slate-900/50">
             <WalletInfo />
           </div>
         </div>
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 bg-slate-900 border-r border-cyan-500/20 z-20 transition-all duration-300">
-        <div className="flex flex-col flex-grow pt-5 bg-slate-900 overflow-y-auto">
-          <div className="flex items-center flex-shrink-0 px-6 mb-8">
+      <div className="hidden md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 bg-slate-900 border-r border-slate-800 z-20">
+        <div className="flex flex-col flex-grow pt-10 overflow-y-auto scrollbar-hide">
+          <div className="flex items-center flex-shrink-0 px-8 mb-10">
             <Link href="/" className="flex items-center space-x-3 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-all duration-300 transform group-hover:scale-105">
-                <svg
-                  className="w-6 h-6 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-xl shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-all duration-300 transform group-hover:-rotate-3">
+                <LayoutDashboard className="w-6 h-6 text-slate-900" />
               </div>
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent group-hover:from-cyan-400 group-hover:to-purple-400 transition-all duration-300">
-                  E-Commerce
+                <h1 className="text-2xl font-black tracking-tighter text-white">
+                  ADMIN<span className="text-cyan-500">.</span>
                 </h1>
-                <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">
-                  Admin Portal
+                <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500 font-bold -mt-1">
+                  Solana Core
                 </p>
               </div>
             </Link>
           </div>
 
-          <div className="px-4 mb-6">
+          <div className="px-6 mb-8">
             <WalletInfo />
           </div>
 
-          <div className="mt-4 flex-grow flex flex-col px-3 space-y-1.5">
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-3">
-              Navegación
+          <div className="flex-grow flex flex-col px-4 space-y-1.5">
+            <div className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-4 px-4">
+              Navegación Principal
             </div>
-            {filteredNavigation.map(item => {
-              const isActive = pathname === item.href;
-              const Icon = item.icon;
-
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`
-                    group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
-                    ${
-                      isActive
-                        ? 'bg-gradient-to-r from-cyan-500/10 to-purple-500/10 text-cyan-400 border border-cyan-500/20 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]'
-                        : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
-                    }
-                  `}
-                >
-                  <Icon
-                    className={`mr-3 flex-shrink-0 h-5 w-5 transition-colors duration-200 ${
-                      isActive ? 'text-cyan-400' : 'text-slate-500 group-hover:text-slate-300'
-                    }`}
-                  />
-                  {item.name}
-                  {isActive && (
-                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]"></div>
-                  )}
-                </Link>
-              );
-            })}
+            {filteredNavigation.map(item => (
+              <NavLink key={item.name} item={item} />
+            ))}
           </div>
         </div>
 
-        {/* Footer info */}
-        <div className="p-4 border-t border-slate-800 bg-slate-900/50">
-          <div className="flex items-center justify-center space-x-2 text-xs text-slate-500">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
-            <span>Sistema Operativo</span>
+        {/* Network Status Footer */}
+        <div className="p-6 border-t border-slate-800 bg-slate-900/50">
+          <div className="flex items-center gap-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+            <div className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </div>
+            <span>Mainnet: Solana Devnet</span>
           </div>
         </div>
       </div>

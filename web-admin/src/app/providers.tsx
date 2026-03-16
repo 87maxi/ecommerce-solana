@@ -21,10 +21,11 @@ export function AppWalletProvider({ children }: { children: React.ReactNode }) {
 
   // Endpoint de conexión priorizando variables de entorno para redes locales/simuladas
   const endpoint = useMemo(() => {
-    if (process.env.NEXT_PUBLIC_RPC_URL) {
-      return process.env.NEXT_PUBLIC_RPC_URL;
-    }
-    return clusterApiUrl(network);
+    return (
+      process.env.NEXT_PUBLIC_RPC_URL ||
+      process.env.NEXT_PUBLIC_SOLANA_RPC_HOST ||
+      clusterApiUrl(network)
+    );
   }, [network]);
 
   // Inicialización de adaptadores de billetera específicos

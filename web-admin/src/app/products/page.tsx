@@ -1,98 +1,106 @@
 'use client';
 
-import Link from 'next/link';
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import {
+  Plus,
+  Search,
+  Filter,
+  Package,
+  Loader2,
+  RefreshCw,
+  Edit3,
+  Trash2,
+  AlertCircle,
+} from 'lucide-react';
 
-import ProductModal from '../../components/ProductModal';
 import { useContract } from '../../hooks/useContract';
-import { useIsMounted } from '../../hooks/useIsMounted';
-import { normalizeProduct, normalizeArrayResponse } from '../../lib/contractUtils';
+import { useRole } from '../../contexts/RoleContext';
+import { normalizeArrayResponse } from '../../lib/contractUtils';
 import { formatAddress } from '../../lib/utils';
 import { Product } from '../../types';
 import { RoleGuard } from '../../components/RoleGuard';
+import ProductModal from '../../components/ProductModal';
 
 export default function ProductsPage() {
-  const isMounted = useIsMounted();
-  const { publicKey, connected } = useWallet();
-  const { connection } = useConnection();
+  return (
+    <RoleGuard allowedRoles={['admin', 'company_owner']}>
+      <ProductsPageContent />
+    </RoleGuard>
+  );
+}
 
-  const publicKeyString = publicKey?.toBase58();
-  const signer = useMemo(() => (publicKey ? { publicKey } : null), [publicKeyString]);
+function ProductsPageContent() {
+  const { connection } = useConnection();
+  const { publicKey } = useWallet();
+  const { roleInfo, isLoading: roleLoading } = useRole();
+
+  const signer = useMemo(() => (publicKey ? { publicKey } : null), [publicKey]);
   const ecommerceContract = useContract('Ecommerce', connection, signer, null);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [isCompanyOwner, setIsCompanyOwner] = useState(false);
 
-  const loadProducts = async () => {
-    if (!ecommerceContract || !publicKeyString) return;
+  const loadProducts = useCallback(async () => {
+    if (!ecommerceContract) return;
 
     try {
       setLoading(true);
       setError(null);
-      console.log('Loading products...');
 
-      // 1. Verificar si el usuario es dueño de alguna empresa
-      let userIsOwner = false;
-      try {
-        const companyIdsResult = await ecommerceContract.getAllCompanies();
-        const companyIds = normalizeArrayResponse(companyIdsResult);
+      // Get products from the contract (optimized for bulk fetching)
+      const productsResult = await ecommerceContract.getAllProducts();
+      const allProductsData = normalizeArrayResponse(productsResult);
 
-        for (const id of companyIds) {
-          const company = await ecommerceContract.getCompany(id);
-          if (company.owner.toLowerCase() === publicKeyString.toLowerCase()) {
-            userIsOwner = true;
-            break;
+      const filteredProducts: Product[] = allProductsData
+        .filter((product: any) => {
+          if (!product) return false;
+
+          // Filter products based on role
+          if (roleInfo.role === 'admin') {
+            return true;
+          } else if (roleInfo.role === 'company_owner' && roleInfo.companyId) {
+            return product.companyId === roleInfo.companyId;
           }
-        }
-        setIsCompanyOwner(userIsOwner);
-      } catch (err) {
-        console.warn('Error checking company ownership:', err);
-        // Continuar de todos modos para cargar productos
-      }
+          return false;
+        })
+        .map((p: any) => {
+          // Normalize price (Assuming 6 decimals for EURT) if it's still raw
+          let price = p.price;
+          if (typeof price === 'string' && price.length > 6) {
+            price = (parseFloat(price) / 1000000).toFixed(2);
+          }
 
-      // 2. Cargar todos los productos
-      const productIdsResult = await ecommerceContract.getAllProducts();
-      const productIds = normalizeArrayResponse(productIdsResult);
+          return {
+            id: p.id,
+            companyId: p.companyId,
+            name: p.name || '',
+            description: p.description || '',
+            price: price,
+            stock: Number(p.stock || 0),
+            image: p.image || '',
+            active: p.active ?? true,
+          } as Product;
+        });
 
-      if (productIds.length === 0) {
-        setProducts([]);
-        return;
-      }
-
-      const productPromises = productIds.map(async (id: any) => {
-        try {
-          const productResult = await ecommerceContract.getProduct(id);
-          return normalizeProduct(productResult, id);
-        } catch (err) {
-          console.error(`Error loading product ${id}:`, err);
-          return null;
-        }
-      });
-
-      const productResults = await Promise.all(productPromises);
-      const validProducts = productResults.filter((p): p is Product => p !== null);
-
-      setProducts(validProducts);
-    } catch (err) {
-      console.error('Error loading products:', err);
-      setError('Failed to load products: ' + (err instanceof Error ? err.message : String(err)));
+      setProducts(filteredProducts);
+    } catch (err: any) {
+      console.error('Error fetching products:', err);
+      setError(err.message || 'Error al cargar el catálogo de productos');
     } finally {
       setLoading(false);
     }
-  };
+  }, [ecommerceContract, roleInfo]);
 
   useEffect(() => {
-    if (isMounted && connected && ecommerceContract) {
+    if (!roleLoading) {
       loadProducts();
-    } else if (isMounted && !connected) {
-      setLoading(false);
     }
-  }, [isMounted, connected, ecommerceContract, publicKeyString]);
+  }, [loadProducts, roleLoading]);
 
   const handleAddProduct = () => {
     setEditingProduct(null);
@@ -104,303 +112,197 @@ export default function ProductsPage() {
     setIsModalOpen(true);
   };
 
-  const handleSaveProduct = async (productData: any) => {
-    if (!ecommerceContract) return;
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      // We need to pass the transaction wait promise to the modal
-      // This is a simplified mock for the transition
-      const mockWait = async () => {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return { status: 1 };
-      };
-
-      if (editingProduct) {
-        // En un contrato real, habría una función updateProduct
-        console.log('Updating product:', productData);
-        // Mock update
-        await mockWait();
-      } else {
-        console.log('Adding product:', productData);
-        // En nuestro contrato original, addProduct no tomaba todos estos parámetros
-        // Pero asumimos que la interfaz de Anchor lo hará
-        const tx = await ecommerceContract.addProduct(
-          productData.companyId,
-          productData.name,
-          productData.description,
-          productData.price, // Convertir a BigInt o BN si es necesario
-          productData.stock,
-          productData.image || ''
-        );
-        // If it's a real anchor program, it returns a tx signature string
-        console.log('Transaction sent:', tx);
-      }
-
-      await loadProducts();
-      setIsModalOpen(false);
-    } catch (err: any) {
-      console.error('Error saving product:', err);
-      setError(err.message || 'Failed to save product');
-      throw err; // Re-throw para que el modal maneje el error
-    } finally {
-      setLoading(false);
-    }
+  const handleDeleteProduct = async (id: string) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este producto?')) return;
+    alert('Funcionalidad de eliminación pendiente de implementación en contrato');
   };
 
-  if (!connected) {
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 bg-slate-900 rounded-2xl border border-cyan-500/20 shadow-2xl">
-        <div className="w-20 h-20 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg shadow-cyan-500/30 mb-6 animate-pulse">
-          <svg
-            className="w-10 h-10 text-white"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-            />
-          </svg>
-        </div>
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mb-4 text-center">
-          Acceso Restringido
-        </h2>
-        <p className="text-slate-400 text-center max-w-md mb-8">
-          Por favor, conecta tu billetera de Solana para acceder a la gestión de productos del
-          E-Commerce.
-        </p>
-      </div>
-    );
-  }
+  const filteredProducts = products.filter(
+    p =>
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <RoleGuard allowedRoles={['admin', 'company_owner']}>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-white">Catálogo de Productos</h1>
-            <p className="text-slate-400 mt-1">
-              Gestiona el inventario, precios y disponibilidad de los productos.
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={loadProducts}
-              className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 hover:text-white transition-all flex items-center gap-2 border border-slate-700"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-              Actualizar
-            </button>
-            <button
-              onClick={handleAddProduct}
-              className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-medium rounded-xl hover:from-cyan-400 hover:to-purple-500 transition-all flex items-center gap-2 shadow-lg shadow-cyan-500/25"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              Nuevo Producto
-            </button>
-          </div>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Header section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h1 className="text-4xl font-black text-white tracking-tight">Inventario de Productos</h1>
+          <p className="text-slate-400 mt-2 font-medium">
+            {roleInfo.role === 'admin'
+              ? 'Gestión global de inventario de todas las empresas'
+              : `Gestionando productos de ${roleInfo.companyName || 'mi empresa'}`}
+          </p>
         </div>
 
-        {error && (
-          <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-start gap-3">
-            <svg
-              className="w-5 h-5 text-red-400 mt-0.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <p className="text-red-400 text-sm">{error}</p>
-          </div>
-        )}
-
-        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl overflow-hidden shadow-xl">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-800/80 border-b border-slate-700/50 text-xs uppercase tracking-wider text-slate-400">
-                  <th className="p-4 font-semibold">Producto</th>
-                  <th className="p-4 font-semibold">Empresa ID</th>
-                  <th className="p-4 font-semibold text-right">Precio (EURT)</th>
-                  <th className="p-4 font-semibold text-center">Stock</th>
-                  <th className="p-4 font-semibold text-center">Estado</th>
-                  <th className="p-4 font-semibold text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-700/50">
-                {loading && products.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="p-8 text-center">
-                      <div className="flex flex-col items-center justify-center space-y-3">
-                        <div className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-slate-400">Cargando catálogo...</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : products.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="p-12 text-center">
-                      <div className="flex flex-col items-center justify-center text-slate-500">
-                        <svg
-                          className="w-16 h-16 mb-4 opacity-50"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1}
-                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                          />
-                        </svg>
-                        <p className="text-lg font-medium text-slate-300">
-                          No hay productos registrados
-                        </p>
-                        <p className="text-sm mt-1">
-                          Añade el primer producto para comenzar a vender.
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  products.map(product => (
-                    <tr key={product.id} className="hover:bg-slate-700/20 transition-colors group">
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden flex-shrink-0">
-                            {product.image ? (
-                              <img
-                                src={product.image}
-                                alt={product.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <svg
-                                className="w-6 h-6 text-slate-500"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={1.5}
-                                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                />
-                              </svg>
-                            )}
-                          </div>
-                          <div>
-                            <div className="font-semibold text-white">{product.name}</div>
-                            <div
-                              className="text-xs text-slate-400 line-clamp-1 max-w-xs"
-                              title={product.description}
-                            >
-                              {product.description || 'Sin descripción'}
-                            </div>
-                            <div className="text-[10px] text-slate-500 mt-0.5 font-mono">
-                              ID: {product.id}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
-                          #{product.companyId}
-                        </span>
-                      </td>
-                      <td className="p-4 text-right">
-                        <span className="font-bold text-cyan-400">{product.price}</span>
-                      </td>
-                      <td className="p-4 text-center">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                            product.stock > 10
-                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                              : product.stock > 0
-                                ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
-                                : 'bg-red-500/10 text-red-400 border-red-500/20'
-                          }`}
-                        >
-                          {product.stock}
-                        </span>
-                      </td>
-                      <td className="p-4 text-center">
-                        <span
-                          className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${
-                            product.isActive
-                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                              : 'bg-slate-800 text-slate-400 border-slate-700'
-                          }`}
-                        >
-                          {product.isActive ? 'Activo' : 'Inactivo'}
-                        </span>
-                      </td>
-                      <td className="p-4 text-right">
-                        <button
-                          onClick={() => handleEditProduct(product)}
-                          className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
-                          title="Editar producto"
-                        >
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+        <div className="flex gap-3">
+          <button
+            onClick={loadProducts}
+            disabled={loading}
+            className="p-3 rounded-2xl bg-slate-800 text-slate-400 border border-slate-700 hover:text-cyan-400 hover:border-cyan-500/30 transition-all"
+            title="Refrescar"
+          >
+            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            onClick={handleAddProduct}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-cyan-500/20 transition-all transform hover:-translate-y-1 active:scale-95"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Añadir Producto</span>
+          </button>
         </div>
-
-        {isModalOpen && (
-          <ProductModal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            onSave={handleSaveProduct}
-            product={editingProduct || undefined}
-          />
-        )}
       </div>
-    </RoleGuard>
+
+      {/* Filters and Search */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="md:col-span-2 relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+          <input
+            type="text"
+            placeholder="Buscar por nombre o descripción..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="w-full pl-12 pr-4 py-4 bg-slate-800/50 border border-slate-700/50 rounded-2xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all backdrop-blur-sm"
+          />
+        </div>
+        <div className="relative">
+          <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+          <select className="w-full pl-12 pr-4 py-4 bg-slate-800/50 border border-slate-700/50 rounded-2xl text-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 appearance-none transition-all cursor-pointer backdrop-blur-sm">
+            <option>Todos los estados</option>
+            <option>Activos</option>
+            <option>Agotados</option>
+            <option>Inactivos</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Error state */}
+      {error && (
+        <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-6 flex items-center gap-4 text-rose-300">
+          <AlertCircle className="w-6 h-6 flex-shrink-0" />
+          <p className="font-medium">{error}</p>
+        </div>
+      )}
+
+      {/* Main Content */}
+      {loading && products.length === 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+            <div
+              key={i}
+              className="h-96 bg-slate-800/40 rounded-3xl border border-slate-700/50 animate-pulse"
+            />
+          ))}
+        </div>
+      ) : filteredProducts.length === 0 ? (
+        <div className="bg-slate-800/30 border border-slate-700/50 rounded-3xl p-20 text-center backdrop-blur-sm">
+          <div className="w-24 h-24 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Package className="w-12 h-12 text-slate-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">No se encontraron productos</h2>
+          <p className="text-slate-500 max-w-md mx-auto">
+            {searchTerm
+              ? `No hay resultados para "${searchTerm}". Prueba con otros términos.`
+              : 'Aún no hay productos registrados. Comienza añadiendo el primero.'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredProducts.map(product => (
+            <div
+              key={product.id}
+              className="group relative bg-slate-800/40 rounded-3xl border border-slate-700/50 hover:border-cyan-500/30 transition-all duration-300 overflow-hidden backdrop-blur-sm flex flex-col h-full"
+            >
+              <div className="relative aspect-square overflow-hidden bg-slate-900/50">
+                {product.image ? (
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-700">
+                    <Package className="w-20 h-20 opacity-20" />
+                  </div>
+                )}
+
+                <div className="absolute top-4 left-4">
+                  <span
+                    className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                      product.active
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
+                    }`}
+                  >
+                    {product.active ? 'Activo' : 'Inactivo'}
+                  </span>
+                </div>
+
+                <div className="absolute bottom-4 left-4">
+                  <div className="bg-slate-900/80 backdrop-blur-md border border-white/5 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                    <div
+                      className={`w-1.5 h-1.5 rounded-full ${product.stock > 0 ? 'bg-cyan-400' : 'bg-rose-500'}`}
+                    />
+                    <span className="text-xs font-bold text-white">{product.stock} en stock</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 flex flex-col flex-grow">
+                <div className="flex justify-between items-start mb-3">
+                  <h3 className="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors line-clamp-1">
+                    {product.name}
+                  </h3>
+                  <span className="text-xl font-black text-cyan-400 font-mono">
+                    €{product.price}
+                  </span>
+                </div>
+                <p className="text-slate-400 text-xs line-clamp-2 mb-6 font-medium leading-relaxed h-8">
+                  {product.description || 'Sin descripción disponible'}
+                </p>
+
+                <div className="mt-auto space-y-4">
+                  {roleInfo.role === 'admin' && (
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500 bg-slate-900/30 p-3 rounded-xl border border-white/5">
+                      <span>Empresa</span>
+                      <span className="text-slate-300 font-mono">
+                        {formatAddress(product.companyId)}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleEditProduct(product)}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-700/50 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-600/50 transition-all"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleDeleteProduct(product.id)}
+                      className="p-2.5 text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 rounded-xl border border-rose-500/20 transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {isModalOpen && (
+        <ProductModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSuccess={loadProducts}
+          product={editingProduct || undefined}
+        />
+      )}
+    </div>
   );
 }

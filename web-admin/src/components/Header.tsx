@@ -18,7 +18,7 @@ export function Header() {
   const showConnectedContent = isMounted && connected;
 
   return (
-    <header className="bg-slate-900/95 backdrop-blur-md shadow-lg border-b border-cyan-500/20 fixed w-full z-10">
+    <header className="bg-slate-900/95 backdrop-blur-md shadow-lg border-b border-cyan-500/20 sticky top-0 z-30 w-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <div className="flex items-center flex-shrink-0">

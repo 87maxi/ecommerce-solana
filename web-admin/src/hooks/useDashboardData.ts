@@ -14,11 +14,18 @@ type DashboardData = {
   recentTransactions: any[];
 };
 
-export function useDashboardData() {
+/**
+ * Hook to fetch dashboard data, with optional filtering by owner address.
+ * If ownerAddress is provided, counts will only include entities related to that owner.
+ */
+export function useDashboardData(ownerAddress?: string) {
   const { publicKey } = useWallet();
   const { connection } = useConnection();
+
+  // Memoize signer to avoid unnecessary re-renders
   const signer = useMemo(() => (publicKey ? { publicKey } : null), [publicKey?.toBase58()]);
-  // Pass null for chainId as it's not used in the Solana refactor
+
+  // Initialize ecommerce contract
   const ecommerceContract = useContract('Ecommerce', connection, signer, null);
 
   const [data, setData] = useState<DashboardData>({
@@ -43,40 +50,73 @@ export function useDashboardData() {
     const fetchDashboardData = async () => {
       try {
         if (isMounted) setLoading(true);
+        setError(null);
+        console.log('[useDashboardData] Starting data fetch...');
 
-        // Fetch company count
-        let companyCount = 0;
-        try {
-          const companyIdsResult = await ecommerceContract.getAllCompanies();
-          const companyIds = normalizeArrayResponse(companyIdsResult);
-          companyCount = companyIds.length;
-        } catch (e) {
-          console.warn('Could not fetch companies:', e);
+        // 1. Fetch Companies
+        const companyIdsResult = await ecommerceContract.getAllCompanies();
+        console.log('[useDashboardData] companyIdsResult:', companyIdsResult);
+        const allCompanyIds = normalizeArrayResponse(companyIdsResult);
+
+        let ownedCompanyIds: string[] = [];
+        let finalCompanyCount = 0;
+
+        if (ownerAddress) {
+          // Filter companies owned by this address
+          for (const id of allCompanyIds) {
+            try {
+              const company = await ecommerceContract.getCompany(id);
+              // Compare addresses in lowercase to avoid case sensitivity issues
+              if (company.owner.toString().toLowerCase() === ownerAddress.toLowerCase()) {
+                ownedCompanyIds.push(id.toString());
+              }
+            } catch (e) {
+              console.warn(`Error fetching company ${id}:`, e);
+            }
+          }
+          finalCompanyCount = ownedCompanyIds.length;
+        } else {
+          finalCompanyCount = allCompanyIds.length;
+        }
+        console.log('[useDashboardData] finalCompanyCount:', finalCompanyCount);
+
+        // 2. Fetch Products
+        const productIdsResult = await ecommerceContract.getAllProducts();
+        console.log('[useDashboardData] productIdsResult:', productIdsResult);
+        const allProductIds = normalizeArrayResponse(productIdsResult);
+
+        let finalProductCount = 0;
+
+        if (ownerAddress) {
+          // Count products belonging to the owner's companies
+          // If the user owns multiple companies, we count products for all of them
+          for (const pid of allProductIds) {
+            try {
+              const product = await ecommerceContract.getProduct(pid);
+              if (ownedCompanyIds.includes(product.companyId.toString())) {
+                finalProductCount++;
+              }
+            } catch (e) {
+              console.warn(`Error fetching product ${pid}:`, e);
+            }
+          }
+        } else {
+          finalProductCount = allProductIds.length;
         }
 
-        // Fetch product count
-        let productCount = 0;
-        try {
-          const productIdsResult = await ecommerceContract.getAllProducts();
-          const productIds = normalizeArrayResponse(productIdsResult);
-          productCount = productIds.length;
-        } catch (e) {
-          console.warn('Could not fetch products:', e);
-        }
-
-        // In a real Anchor program, getting customer count might require fetching all PDA accounts
-        // of a specific type or keeping a counter in the global state.
-        // For the mock transition, we'll return a dummy value or what the mock provides.
+        // 3. Customer and Sales (Placeholders for extended logic)
+        // In current Solana contract iteration, global sales and customer counts
+        // might require indexing or specific counter accounts.
         const customerCount = 0;
-
-        // Same for sales and transactions.
         const totalSales = 0;
         const recentTransactions: any[] = [];
 
+        console.log('[useDashboardData] finalProductCount:', finalProductCount);
+
         if (isMounted) {
           setData({
-            companyCount,
-            productCount,
+            companyCount: finalCompanyCount,
+            productCount: finalProductCount,
             customerCount,
             totalSales,
             recentTransactions,
@@ -98,12 +138,10 @@ export function useDashboardData() {
 
     fetchDashboardData();
 
-    // Optionally set up polling or subscriptions here
-
     return () => {
       isMounted = false;
     };
-  }, [ecommerceContract]);
+  }, [ecommerceContract, ownerAddress]);
 
   return { data, loading, error };
 }
