@@ -4,7 +4,7 @@ export interface Order {
   buyerAddress: string;
   tokenAmount: number;
   invoice: string;
-  status: "processing" | "completed" | "expired" | "failed";
+  status: "pending" | "processing" | "completed" | "expired" | "failed";
   txHash: string | null;
   createdAt: Date;
   completedAt: Date | null;

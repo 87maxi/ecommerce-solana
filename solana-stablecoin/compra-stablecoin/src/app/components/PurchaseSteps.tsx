@@ -9,7 +9,7 @@ export interface Step {
     name: string;
     description: string;
     status: StepStatus;
-    icon: JSX.Element;
+    icon: React.ReactNode;
 }
 
 interface PurchaseStepsProps {

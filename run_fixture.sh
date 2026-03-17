@@ -43,26 +43,22 @@ if [ ! -f "$FIXTURE_FILE" ]; then
 fi
 
 echo "🔎 Iniciando importación de datos en Solana..."
-ANCHOR_DIR="$SCRIPT_DIR/solana-stablecoin/solana"
+ECOMMERCE_DIR="$SCRIPT_DIR/solana-ecommerce"
 
-# 3. Entrar al directorio del motor (donde están las dependencias de TS)
-cd "$ANCHOR_DIR"
+# 3. Entrar al directorio de solana-ecommerce
+cd "$ECOMMERCE_DIR"
 
-# Instalar dependencias si no existen
-if [ ! -d "node_modules" ]; then
-    echo "📦 Instalando dependencias necesarias..."
-    npm install --legacy-peer-deps
-fi
+# 4. Ejecutar el motor de fixtures escrito en Rust
+echo "🚀 Ejecutando motor de metaprogramación (Rust Native)..."
 
-# 4. Ejecutar el motor de fixtures directamente con ts-node
-# Usamos --transpile-only para saltar la validación de tipos profunda de Anchor
-echo "🚀 Ejecutando motor de metaprogramación..."
-# Pasamos el Program ID como un segundo argumento al script TS si está definido
+# Construimos los argumentos para el fixture-tool
+ARGS=("--fixture" "$FIXTURE_FILE")
 if [ -n "$OVERRIDE_PROGRAM_ID" ]; then
-    npx ts-node --transpile-only -P ./tsconfig.json scripts/fixture-engine.ts "$FIXTURE_FILE" "$OVERRIDE_PROGRAM_ID"
-else
-    npx ts-node --transpile-only -P ./tsconfig.json scripts/fixture-engine.ts "$FIXTURE_FILE"
+    ARGS+=("--program-id" "$OVERRIDE_PROGRAM_ID")
 fi
+
+# Ejecutamos con cargo
+cargo run -q -p fixture-tool -- "${ARGS[@]}"
 
 if [ $? -eq 0 ]; then
     echo ""

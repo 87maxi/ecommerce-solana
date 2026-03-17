@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { orders } from '@/lib/orderStorage';
-import { CreatePaymentIntentRequest, CreatePaymentIntentResponse } from '@/types';
+import type { CreatePaymentIntentRequest, CreatePaymentIntentResponse } from '@/types';
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY!);
 

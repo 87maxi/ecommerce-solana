@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-solana_ecommerce = "4ourUpEhfq64WVb1gRwR7fxkWbKZnMPmbx6D6dFwvGCq"
+solana_ecommerce = "5vC8pVqZguD8NB4qrrULXkXoN5ebfdsZLitYLmqpJAQj"
 
 [registry]
 url = "https://api.apr.dev"

@@ -1,19 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Es importante para asegurar que Stripe.js se cargue correctamente
-  experimental: {
-    serverComponentsExternalPackages: ["stripe", "@stripe/stripe-js"],
-    // Configuración para Turbopack (Next.js 15+)
-    turbo: {
-      resolveAlias: {
-        fs: false,
-        "pino-pretty": false,
-        lokijs: false,
-        encoding: false,
-      },
-    },
-  },
-
+  serverExternalPackages: ["stripe", "@stripe/stripe-js"],
+  turbopack: {},
   // Configuración de Webpack para el bundle del cliente (Retrocompatibilidad)
   webpack: (config, { isServer }) => {
     if (!isServer) {

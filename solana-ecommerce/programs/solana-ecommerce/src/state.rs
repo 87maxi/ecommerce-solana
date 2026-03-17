@@ -31,15 +31,12 @@ pub struct Product {
     pub id: u64,
     pub company_id: u64,
     pub name: String,
-    pub description: String,
     pub price: u64,
     pub stock: u64,
-    pub image: String,
-    pub is_active: bool,
 }
 
 impl Product {
-    pub const MAX_SIZE: usize = 8 + 8 + 8 + (4 + 50) + (4 + 200) + 8 + 8 + (4 + 100) + 1;
+    pub const MAX_SIZE: usize = 8 + 8 + 8 + (4 + 50) + 8 + 8;
 }
 
 #[account]

@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
         buyerAddress: walletAddress,
         tokenAmount: amount,
         invoice,
-        status: "processing",
+        status: "processing" as const,
         txHash: null,
         createdAt: new Date(),
         completedAt: null,

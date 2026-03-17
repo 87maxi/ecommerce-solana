@@ -8,7 +8,7 @@ use crate::constants::*;
 use crate::errors::EcommerceError;
 use crate::state::*;
 
-declare_id!("4ourUpEhfq64WVb1gRwR7fxkWbKZnMPmbx6D6dFwvGCq");
+declare_id!("5vC8pVqZguD8NB4qrrULXkXoN5ebfdsZLitYLmqpJAQj");
 
 #[program]
 pub mod solana_ecommerce {
@@ -81,9 +81,7 @@ pub mod solana_ecommerce {
     pub fn add_product(
         ctx: Context<AddProduct>,
         name: String,
-        description: String,
         price: u64,
-        image: String,
         stock: u64,
     ) -> Result<()> {
         let global_state = &mut ctx.accounts.global_state;
@@ -95,11 +93,8 @@ pub mod solana_ecommerce {
         product.id = global_state.next_product_id;
         product.company_id = company.id;
         product.name = name;
-        product.description = description;
         product.price = price;
         product.stock = stock;
-        product.image = image;
-        product.is_active = true;
 
         global_state.next_product_id = global_state
             .next_product_id
@@ -142,24 +137,6 @@ pub mod solana_ecommerce {
     }
 
     /// Deactivates a product
-    pub fn deactivate_product(ctx: Context<UpdateProductStatus>) -> Result<()> {
-        let product = &mut ctx.accounts.product;
-        require!(product.is_active, EcommerceError::ProductAlreadyInactive);
-
-        product.is_active = false;
-        msg!("Product deactivated: {}", product.id);
-        Ok(())
-    }
-
-    /// Activates a product
-    pub fn activate_product(ctx: Context<UpdateProductStatus>) -> Result<()> {
-        let product = &mut ctx.accounts.product;
-        require!(!product.is_active, EcommerceError::ProductAlreadyActive);
-
-        product.is_active = true;
-        msg!("Product activated: {}", product.id);
-        Ok(())
-    }
 
     /// Registers a new customer
     pub fn register_customer(ctx: Context<RegisterCustomer>) -> Result<()> {
@@ -488,22 +465,3 @@ pub struct UpdateCart<'info> {
     pub system_program: Program<'info, System>,
 }
 
-#[derive(Accounts)]
-pub struct UpdateProductStatus<'info> {
-    #[account(
-        seeds = [COMPANY_SEED, company.id.to_le_bytes().as_ref()],
-        bump,
-        constraint = company.owner == owner.key() @ EcommerceError::Unauthorized
-    )]
-    pub company: Account<'info, Company>,
-
-    #[account(
-        mut,
-        seeds = [PRODUCT_SEED, product.id.to_le_bytes().as_ref()],
-        bump,
-        constraint = product.company_id == company.id @ EcommerceError::Unauthorized
-    )]
-    pub product: Account<'info, Product>,
-
-    pub owner: Signer<'info>,
-}

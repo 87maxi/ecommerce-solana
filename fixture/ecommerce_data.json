@@ -9,10 +9,15 @@
         "Venta de hardware y gadgets de última generación"
       ],
       "accounts": {
+        "global_state": {
+          "pda": [
+            "global-state"
+          ]
+        },
         "company": {
           "pda": [
             "company",
-            "@wallet"
+            "1"
           ]
         },
         "owner": "@wallet",
@@ -28,14 +33,18 @@
         50
       ],
       "accounts": {
-        "product": {
+        "global_state": {
           "pda": [
-            "product",
-            "@company_pda",
-            "Laptop Pro"
+            "global-state"
           ]
         },
         "company": "@company_pda",
+        "product": {
+          "pda": [
+            "product",
+            "1"
+          ]
+        },
         "owner": "@wallet",
         "system_program": "11111111111111111111111111111111"
       }
@@ -49,14 +58,18 @@
         100
       ],
       "accounts": {
-        "product": {
+        "global_state": {
           "pda": [
-            "product",
-            "@company_pda",
-            "Monitor 4K"
+            "global-state"
           ]
         },
         "company": "@company_pda",
+        "product": {
+          "pda": [
+            "product",
+            "2"
+          ]
+        },
         "owner": "@wallet",
         "system_program": "11111111111111111111111111111111"
       }
@@ -70,14 +83,18 @@
         75
       ],
       "accounts": {
-        "product": {
+        "global_state": {
           "pda": [
-            "product",
-            "@company_pda",
-            "Smartphone X1"
+            "global-state"
           ]
         },
         "company": "@company_pda",
+        "product": {
+          "pda": [
+            "product",
+            "3"
+          ]
+        },
         "owner": "@wallet",
         "system_program": "11111111111111111111111111111111"
       }
@@ -91,14 +108,18 @@
         150
       ],
       "accounts": {
-        "product": {
+        "global_state": {
           "pda": [
-            "product",
-            "@company_pda",
-            "Teclado Mecánico RGB"
+            "global-state"
           ]
         },
         "company": "@company_pda",
+        "product": {
+          "pda": [
+            "product",
+            "4"
+          ]
+        },
         "owner": "@wallet",
         "system_program": "11111111111111111111111111111111"
       }
@@ -112,14 +133,18 @@
         200
       ],
       "accounts": {
-        "product": {
+        "global_state": {
           "pda": [
-            "product",
-            "@company_pda",
-            "Mouse Pro Wireless"
+            "global-state"
           ]
         },
         "company": "@company_pda",
+        "product": {
+          "pda": [
+            "product",
+            "5"
+          ]
+        },
         "owner": "@wallet",
         "system_program": "11111111111111111111111111111111"
       }
