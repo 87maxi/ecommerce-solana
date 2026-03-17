@@ -5,7 +5,14 @@ import {
   Transaction,
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
-import { getOrCreateAssociatedTokenAccount, mintTo } from "@solana/spl-token";
+import {
+  getOrCreateAssociatedTokenAccount,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
+import { Program, AnchorProvider, BN, Idl } from "@coral-xyz/anchor";
+import solanaIdl from "./solana_idl.json";
+
+const IDL = solanaIdl as Idl;
 
 /**
  * Mints EuroTokens (EURT) to a specified wallet address after a successful payment.
@@ -90,17 +97,57 @@ export async function mintTokens(
       `[MINTING] Minting ${amount} EURT (which is ${amountToMint} in token units) to ATA...`,
     );
 
-    // The `mintTo` helper function correctly constructs the `MintTo` instruction,
-    // internally using the official `TOKEN_PROGRAM_ID`. This is the core fix
-    // for the "IncorrectProgramId" error.
-    const transactionSignature = await mintTo(
-      connection,
-      minter, // Payer of the transaction fees
-      mintPublicKey, // The token mint
-      associatedTokenAccount.address, // The destination ATA
-      minter.publicKey, // The minting authority
-      amountToMint, // The amount to mint, adjusted for decimals
+    // Configure Anchor Program
+    const programIdStr = process.env.NEXT_PUBLIC_STABLECOIN_PROGRAM_ADDRESS;
+    if (!programIdStr) {
+      throw new Error("NEXT_PUBLIC_STABLECOIN_PROGRAM_ADDRESS is not set.");
+    }
+    const programId = new PublicKey(programIdStr);
+    const wallet = {
+      publicKey: minter.publicKey,
+      signTransaction: async (tx: any) => {
+        if (tx.version !== undefined) {
+          tx.sign([minter]);
+        } else {
+          tx.partialSign(minter);
+        }
+        return tx;
+      },
+      signAllTransactions: async (txs: any[]) => {
+        return txs.map((tx) => {
+          if (tx.version !== undefined) {
+            tx.sign([minter]);
+          } else {
+            tx.partialSign(minter);
+          }
+          return tx;
+        });
+      },
+    };
+    const provider = new AnchorProvider(connection, wallet as any, {
+      commitment: "confirmed",
+    });
+    const program = new Program(
+      { ...IDL, address: programIdStr } as unknown as Idl,
+      provider,
     );
+
+    const [mintAuthorityPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("mint_authority")],
+      programId,
+    );
+
+    // Call Anchor Smart Contract to mint tokens via PDA Authority
+    const transactionSignature = await program.methods
+      .mintTokens(new BN(amountToMint))
+      .accounts({
+        mint: mintPublicKey,
+        mintAuthority: mintAuthorityPda,
+        destination: associatedTokenAccount.address,
+        payer: minter.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      } as any)
+      .rpc();
 
     console.log(
       `[MINTING] ✅ Mint successful! Transaction signature: ${transactionSignature}`,
@@ -116,5 +163,44 @@ export async function mintTokens(
       console.error("[MINTING] Solana transaction logs:", error.logs);
     }
     throw new Error(`Failed to mint tokens: ${error.message}`);
+  }
+}
+
+/**
+ * Gets the EURT balance for a given wallet address.
+ * @param walletAddress The Solana wallet address.
+ * @returns The balance as a string.
+ */
+export async function getBalance(walletAddress: string): Promise<string> {
+  try {
+    const rpcUrl = process.env.RPC_URL;
+    if (!rpcUrl) {
+      throw new Error("RPC_URL is not defined in environment variables.");
+    }
+    const connection = new Connection(rpcUrl, "confirmed");
+
+    const mintPublicKeyStr = process.env.NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS;
+    if (!mintPublicKeyStr) {
+      throw new Error("NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS is not set.");
+    }
+
+    const mint = new PublicKey(mintPublicKeyStr);
+    const owner = new PublicKey(walletAddress);
+
+    const accounts = await connection.getParsedTokenAccountsByOwner(owner, {
+      mint: mint,
+    });
+
+    if (accounts.value.length === 0) {
+      return "0";
+    }
+
+    return (
+      accounts.value[0].account.data.parsed.info.tokenAmount.uiAmountString ||
+      "0"
+    );
+  } catch (error: any) {
+    console.error("[BALANCE] Error getting balance:", error);
+    return "0";
   }
 }
