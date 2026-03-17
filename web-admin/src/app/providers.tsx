@@ -19,14 +19,14 @@ export function AppWalletProvider({ children }: { children: React.ReactNode }) {
   // Configuración de red (devnet para desarrollo)
   const network = WalletAdapterNetwork.Devnet;
 
-  // Endpoint de conexión priorizando variables de entorno para redes locales/simuladas
+  // Endpoint de conexión priorizando la red local (Surfpool) para desarrollo
   const endpoint = useMemo(() => {
     return (
       process.env.NEXT_PUBLIC_RPC_URL ||
       process.env.NEXT_PUBLIC_SOLANA_RPC_HOST ||
-      clusterApiUrl(network)
+      'http://127.0.0.1:8899' // Dirección por defecto de Surfpool/Localnet
     );
-  }, [network]);
+  }, []);
 
   // Inicialización de adaptadores de billetera específicos
   const wallets = useMemo(

@@ -1,3 +1,4 @@
+import { PublicKey } from '@solana/web3.js';
 // Utilidades comunes para la aplicación
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -6,9 +7,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatAddress(address: string): string {
+export function formatAddress(address: string | PublicKey): string {
   if (!address) return '';
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  const addrStr = typeof address === 'string' ? address : address.toBase58();
+  return `${addrStr.slice(0, 6)}...${addrStr.slice(-4)}`;
 }
 
 export function formatCurrency(

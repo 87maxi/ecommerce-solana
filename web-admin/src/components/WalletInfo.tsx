@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { PublicKey } from '@solana/web3.js';
-import { getAssociatedTokenAddress } from '@solana/spl-token';
+import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 
 import { useRole } from '../contexts/RoleContext';
@@ -39,7 +39,10 @@ export function WalletInfo() {
         const mint = new PublicKey(mintAddressStr);
         const userPubKey = new PublicKey(address);
 
-        const ata = await getAssociatedTokenAddress(mint, userPubKey);
+        const [ata] = PublicKey.findProgramAddressSync(
+          [userPubKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mint.toBuffer()],
+          ASSOCIATED_TOKEN_PROGRAM_ID
+        );
 
         try {
           const balanceInfo = await connection.getTokenAccountBalance(ata);

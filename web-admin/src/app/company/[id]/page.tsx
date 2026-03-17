@@ -194,10 +194,10 @@ function CompanyDetailContent() {
             <div className="flex justify-between items-center">
               <span className="text-slate-500 font-bold uppercase">Owner</span>
               <button
-                onClick={() => copyToClipboard(company.owner, 'owner')}
+                onClick={() => copyToClipboard(company.owner.toBase58(), 'owner')}
                 className="flex items-center gap-2 font-mono text-cyan-400 hover:text-white"
               >
-                {formatAddress(company.owner)}
+                {formatAddress(company.owner.toBase58())}
                 <ShieldCheck className="w-3 h-3" />
                 {copied === 'owner' && <span className="text-cyan-400 text-xs">Copied!</span>}
               </button>
@@ -252,7 +252,7 @@ function CompanyDetailContent() {
         <ProductModal
           isOpen={isProductModalOpen}
           onClose={() => setIsProductModalOpen(false)}
-          onSuccess={loadData}
+          onSave={loadData}
           product={editingProduct || undefined}
           companyId={company.id}
         />

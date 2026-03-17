@@ -5,12 +5,16 @@
 export const CONTRACT_ADDRESSES = {
   // Red Local de Solana (Surfpool / Localnet)
   1337: {
-    Ecommerce:
-      process.env.NEXT_PUBLIC_ECOMMERCE_CONTRACT_ADDRESS ||
-      '675k16uTf5h3qf4Bf9f9f9f9f9f9f9f9f9f9f9f9f9f', // Program ID en Base58
-    EuroToken:
-      process.env.NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS ||
-      '789k16uTf5h3qf4Bf9f9f9f9f9f9f9f9f9f9f9f9f9f', // Mint Address en Base58
+    Ecommerce: (() => {
+      const addr = process.env.NEXT_PUBLIC_ECOMMERCE_CONTRACT_ADDRESS;
+      if (!addr) throw new Error('NEXT_PUBLIC_ECOMMERCE_CONTRACT_ADDRESS is not defined');
+      return addr;
+    })(),
+    EuroToken: (() => {
+      const addr = process.env.NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS;
+      if (!addr) throw new Error('NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS is not defined');
+      return addr;
+    })(),
   },
 };
 

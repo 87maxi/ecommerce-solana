@@ -31,6 +31,7 @@ interface CartItem {
 export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const [total, setTotal] = useState("0.00");
   const [isPaying, setIsPaying] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -51,6 +52,10 @@ export default function CartPage() {
     loading: balanceLoading,
     error: balanceError,
   } = useEuroTokenBalance();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -170,10 +175,61 @@ export default function CartPage() {
       const merchantAddress = "7eCTmt5LYSqnjgw8jebHjUzf8X7omxEpxYHbsXsmPtZQ";
 
       console.log("Iniciando pago directo on-chain con EURT...");
-      const { signature, error } = await processPayment(merchantAddress, total);
+      const paymentResult = await processPayment(merchantAddress, total);
+      
+      if (!paymentResult) {
+        throw new Error("No se pudo iniciar el proceso de pago. Verifica tu conexión a la wallet.");
+      }
+
+      const { signature, error } = paymentResult;
 
       if (signature) {
         console.log("Pago exitoso. Firma:", signature);
+
+        // 1. Preparar datos para la factura
+        const orderId = Date.now().toString();
+        const invoiceData = {
+          orderId,
+          customerAddress: publicKey.toBase58(),
+          items: cartItems.map((item) => ({
+            name: item.product.name,
+            quantity: item.quantity,
+            price: item.product.price,
+          })),
+          total: total,
+          txHash: signature,
+        };
+
+        // 2. Generar PDF y subir a IPFS (Llamada al Admin API)
+        console.log("Generando factura en IPFS...");
+        try {
+          // El Admin API expone el endpoint en el puerto 3032
+          const adminApiUrl =
+            process.env.NEXT_PUBLIC_ADMIN_API_URL || "http://localhost:3032";
+          const res = await fetch(`${adminApiUrl}/api/generate-invoice`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(invoiceData),
+          });
+
+          if (!res.ok) throw new Error("Error en la API de facturación");
+
+          const { cid } = await res.json();
+          console.log("Factura guardada en IPFS con CID:", cid);
+
+          // 3. Registrar la factura on-chain
+          console.log("Registrando factura en el Smart Contract...");
+          // Asumimos que todos los productos son de la primera empresa para esta demo
+          const companyId = companyIds[0];
+          await createInvoice(companyId, total, signature, cid);
+        } catch (ipfsError) {
+          console.error(
+            "Error en el proceso de facturación IPFS/On-chain:",
+            ipfsError,
+          );
+          // Continuamos con el flujo de éxito aunque falle la factura para no bloquear al usuario
+        }
+
         setPaymentSuccess(true);
         // Limpiamos el carrito localmente
         await clearCart();
@@ -199,7 +255,7 @@ export default function CartPage() {
     }
   };
 
-  if (!connected) {
+  if (!mounted || !connected) {
     return (
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-md mx-auto text-center bg-card/50 backdrop-blur-sm border border-border/50 rounded-3xl p-8 shadow-xl shadow-black/5">
@@ -214,7 +270,11 @@ export default function CartPage() {
             realizar compras.
           </p>
           <div className="flex justify-center">
-            <WalletMultiButton className="!bg-primary hover:!bg-primary/90 !transition-all !rounded-xl" />
+            {mounted ? (
+              <WalletMultiButton className="!bg-primary hover:!bg-primary/90 !transition-all !rounded-xl" />
+            ) : (
+              <div className="h-12 w-48 bg-muted rounded-xl animate-pulse"></div>
+            )}
           </div>
         </div>
       </div>

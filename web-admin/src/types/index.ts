@@ -1,8 +1,9 @@
+import { PublicKey } from '@solana/web3.js';
 // Tipos comunes para la aplicación
 
 export type Company = {
   id: string;
-  owner: string;
+  owner: PublicKey;
   name: string;
   description: string;
   isActive: boolean;
@@ -61,4 +62,15 @@ export type Stats = {
   icon: React.ReactNode;
   color: string;
   description?: string;
+};
+
+export type Invoice = {
+  id: string;
+  companyId: string;
+  customerAddress: string;
+  totalAmount: string;
+  timestamp: Date;
+  isPaid: boolean;
+  paymentTxHash: string;
+  ipfsCid: string;
 };

@@ -36,6 +36,9 @@ function CompaniesPageContent() {
   const signer = useMemo(() => (publicKey ? { publicKey } : null), [publicKey]);
   const ecommerceContract = useContract('Ecommerce', connection, signer, null);
 
+  console.log('[CompaniesPage] Wallet conectada:', publicKey?.toBase58());
+  console.log('[CompaniesPage] Contrato inicializado:', !!ecommerceContract);
+
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,13 +52,17 @@ function CompaniesPageContent() {
     setLoading(true);
     setError(null);
     try {
+      console.log('[CompaniesPage] Cargando empresas desde la blockchain...');
       // The contract hook is now optimized to return full company data
       const allCompaniesData = await ecommerceContract.getAllCompanies();
+      console.log('[CompaniesPage] Datos crudos recibidos:', allCompaniesData);
 
-      // Filter for active companies and ensure data is valid
-      const activeCompanies = allCompaniesData.filter((c: Company) => c && c.id && c.isActive);
+      // Relajamos el filtro: mostramos cualquier empresa que tenga un ID válido,
+      // ignorando temporalmente el flag isActive por si hay inconsistencias on-chain.
+      const visibleCompanies = allCompaniesData.filter((c: Company) => c && c.id);
+      console.log('[CompaniesPage] Empresas filtradas para visualización:', visibleCompanies);
 
-      setCompanies(activeCompanies);
+      setCompanies(visibleCompanies);
     } catch (err: any) {
       setError(err.message || 'Error al cargar las empresas desde la blockchain.');
     } finally {

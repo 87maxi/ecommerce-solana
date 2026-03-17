@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",
-    "@solana/spl-token": "^0.4.14",
+    "@solana/spl-token": "^0.1.8",
     "@solana/wallet-adapter-backpack": "^0.1.14",
     "@solana/wallet-adapter-react": "^0.15.39",
     "@solana/wallet-adapter-react-ui": "^0.9.39",
@@ -26,8 +26,10 @@
     "bs58": "^6.0.0",
     "clsx": "^2.1.1",
     "daisyui": "^5.5.19",
+    "kubo-rpc-client": "^6.1.0",
     "lucide-react": "^0.577.0",
     "next": "16.1.6",
+    "pdf-lib": "^1.17.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "tailwind-merge": "^3.5.0"
@@ -43,8 +45,6 @@
     "@types/node": "^25",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@types/testing-library__jest-dom": "^6.0.0",
-    "@types/testing-library__react": "^10.2.0",
     "autoprefixer": "^10.4.27",
     "babel-jest": "^30.3.0",
     "eslint": "^10",

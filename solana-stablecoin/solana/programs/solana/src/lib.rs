@@ -73,6 +73,28 @@ pub mod solana {
         msg!("Product added: {} with price {}", name, price);
         Ok(())
     }
+
+    pub fn create_invoice(
+        ctx: Context<CreateInvoice>,
+        company_id: Pubkey,
+        total_amount: u64,
+        payment_tx_hash: String,
+        ipfs_cid: String,
+    ) -> Result<()> {
+        let invoice = &mut ctx.accounts.invoice;
+        invoice.company_id = company_id;
+        invoice.customer_address = ctx.accounts.customer.key();
+        invoice.total_amount = total_amount;
+        invoice.timestamp = Clock::get()?.unix_timestamp;
+        invoice.is_paid = true;
+        invoice.payment_tx_hash = payment_tx_hash;
+        invoice.ipfs_cid = ipfs_cid;
+        msg!(
+            "Invoice created for customer: {}",
+            ctx.accounts.customer.key()
+        );
+        Ok(())
+    }
 }
 
 #[account]
@@ -89,6 +111,17 @@ pub struct Product {
     pub name: String,
     pub price: u64,
     pub stock: u64,
+}
+
+#[account]
+pub struct Invoice {
+    pub company_id: Pubkey,
+    pub customer_address: Pubkey,
+    pub total_amount: u64,
+    pub timestamp: i64,
+    pub is_paid: bool,
+    pub payment_tx_hash: String,
+    pub ipfs_cid: String,
 }
 
 #[derive(Accounts)]
@@ -183,5 +216,21 @@ pub struct AddProduct<'info> {
     pub company: Account<'info, Company>,
     #[account(mut)]
     pub owner: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(company_id: Pubkey, total_amount: u64, payment_tx_hash: String, ipfs_cid: String)]
+pub struct CreateInvoice<'info> {
+    #[account(
+        init,
+        payer = customer,
+        space = 350, // 8 (discriminator) + 32 (pubkey) + 32 (pubkey) + 8 (u64) + 8 (i64) + 1 (bool) + 4+100 (string) + 4+100 (string) + extra buffer
+        seeds = [b"invoice", payment_tx_hash.as_bytes()],
+        bump
+    )]
+    pub invoice: Account<'info, Invoice>,
+    #[account(mut)]
+    pub customer: Signer<'info>,
     pub system_program: Program<'info, System>,
 }

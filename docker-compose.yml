@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  # Nodo de IPFS (Kubo) optimizado para desarrollo local y aislado.
+  # No se conecta a la red pública, arranca instantáneamente y consume mínimos recursos.
+  ipfs-node:
+    image: ipfs/kubo:latest
+    container_name: local-ipfs-dev-node
+    ports:
+      # API para subir archivos desde el backend (web-admin)
+      - "127.0.0.1:5001:5001"
+      # Gateway para acceder a los archivos desde el navegador
+      - "127.0.0.1:8080:8080"
+    volumes:
+      # Almacena los datos de IPFS para que persistan entre reinicios del contenedor.
+      - ipfs_dev_data:/data/ipfs
+    restart: unless-stopped
+    environment:
+      # El perfil 'test' es clave: deshabilita toda la comunicación de red (bootstrap, etc.),
+      # lo que resulta en un arranque casi instantáneo y un uso muy bajo de CPU/RAM.
+      - IPFS_PROFILE=test
+    command:
+      # Inicia el demonio y se asegura de que las migraciones del repositorio se apliquen.
+      - "daemon"
+      - "--migrate"
+    healthcheck:
+      test: ["CMD", "ipfs", "diag", "cmds"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  ipfs_dev_data:

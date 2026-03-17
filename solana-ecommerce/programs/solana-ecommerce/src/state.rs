@@ -85,6 +85,7 @@ pub struct Invoice {
     pub timestamp: i64,
     pub status: PaymentStatus,
     pub payment_tx_hash: String,
+    pub ipfs_cid: String,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
@@ -109,5 +110,5 @@ impl InvoiceItem {
 }
 
 impl Invoice {
-    pub const MAX_SIZE: usize = 8 + 8 + 8 + 32 + 8 + 8 + 1 + (4 + 100);
+    pub const MAX_SIZE: usize = 8 + 8 + 8 + 32 + 8 + 8 + 1 + (4 + 100) + (4 + 100);
 }

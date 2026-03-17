@@ -70,7 +70,7 @@ export function useContract() {
         const ecommerceProgram = new Program(idl, anchorProvider);
 
         if (isMounted) {
-          setAccount(walletAddress);
+          setAccount(walletAddress || null);
           setProgram(ecommerceProgram);
           setIsInitialized(true);
           console.log("[useContract] Program initialized successfully.");
@@ -123,20 +123,20 @@ export function useContract() {
       );
       // En el contrato actual desplegado (4ourUp), no hay un contador global de productos.
       // Usamos .all() para obtener todas las cuentas de tipo 'product'.
-      const productAccounts = await program.account.product.all();
+      const productAccounts = await (program.account as any).product.all();
 
       const products = productAccounts.map((p: any) => {
         const data = p.account;
         return {
-          // Usamos la clave pública de la cuenta como ID para mayor estabilidad
+          // Use the PublicKey as ID since numeric ID was removed
           id: p.publicKey.toBase58(),
-          companyId: data.company?.toBase58() || "1",
+          // Use company pubkey instead of companyId
+          companyId: data.company?.toBase58() || "Unknown",
           name: data.name,
           description: "Calidad premium garantizada en Solana E-Shop",
-          price: (data.price.toNumber() / 100).toFixed(2),
+          price: (data.price.toNumber() / 1000000).toFixed(2),
           stock: data.stock.toNumber(),
-          image:
-            "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800",
+          image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800",
           active: true,
         };
       });
@@ -317,14 +317,17 @@ export function useContract() {
           return null;
         }
 
+        // Create the transaction
+        const transaction = new Transaction();
+
         // 3. Manejar la creación de la ATA del comerciante (Merchant) si no existe
         const merchantAtaInfo = await connection.getAccountInfo(merchantAta);
         if (!merchantAtaInfo) {
           console.log(
-            "[useContract] Merchant ATA no encontrada. Iniciando transacción de creación previa...",
+            "[useContract] Merchant ATA no encontrada. Agregando instrucción de creación a la transacción...",
           );
 
-          const createAtaTx = new Transaction().add(
+          transaction.add(
             createAssociatedTokenAccountInstruction(
               publicKey, // Payer (Tú)
               merchantAta, // La ATA a crear
@@ -332,27 +335,11 @@ export function useContract() {
               mintAddress, // El Mint (EURT)
             ),
           );
-
-          console.log(
-            "[useContract] Enviando transacción para crear ATA del vendedor...",
-          );
-          const createAtaSig = await sendTransaction(createAtaTx, connection);
-
-          const latestBlockhashForAta = await connection.getLatestBlockhash();
-          await connection.confirmTransaction(
-            {
-              signature: createAtaSig,
-              ...latestBlockhashForAta,
-            },
-            "confirmed",
-          );
-
-          console.log("[useContract] ATA del vendedor creada exitosamente.");
         }
 
-        // 4. Ejecutar la transacción de transferencia (TransferChecked)
-        console.log("[useContract] Preparando transferencia de tokens...");
-        const transferTx = new Transaction().add(
+        // 4. Agregar la instrucción de transferencia (TransferChecked)
+        console.log("[useContract] Agregando transferencia de tokens a la transacción...");
+        transaction.add(
           createTransferCheckedInstruction(
             userAta, // Cuenta de origen
             mintAddress, // Mint del token
@@ -363,31 +350,41 @@ export function useContract() {
           ),
         );
 
-        // Firmar y enviar la transferencia
-        // Usamos skipPreflight para evitar fallos de simulación en RPCs locales (Surfpool).
-        // Evitamos que la billetera maneje la confirmación profunda (que causa el "Plugin Closed").
-        const { blockhash } = await connection.getLatestBlockhash("confirmed");
-        transferTx.recentBlockhash = blockhash;
-        transferTx.feePayer = publicKey;
+        // Get latest blockhash
+        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = publicKey;
 
-        console.log("[useContract] Solicitando firma de la billetera...");
-        const signature = await sendTransaction(transferTx, connection, {
-          skipPreflight: true,
-          preflightCommitment: "processed",
-        });
+        console.log("[useContract] Solicitando firma y envío de la transacción combinada...");
+        console.log(`[useContract] Instrucciones en la transacción: ${transaction.instructions.length}`);
+        
+        // Enviamos la transacción completa
+        let signature: string;
+        try {
+          signature = await sendTransaction(transaction, connection, {
+            skipPreflight: true, // A veces la simulación falla en local pero la TX es válida
+            preflightCommitment: "confirmed", // Usamos confirmed para mayor seguridad
+          });
+        } catch (signError: any) {
+          console.error("[useContract] Error crítico al firmar/enviar:", signError);
+          // Si el error contiene "Plugin Closed", intentamos dar más contexto
+          if (signError.message?.includes("Plugin Closed")) {
+             throw new Error("La wallet se cerró (Plugin Closed). Esto puede ocurrir por un timeout o un fallo en la simulación de la extensión.");
+          }
+          throw signError;
+        }
 
         console.log(
-          "[useContract] Transacción enviada a la red, esperando confirmación:",
+          "[useContract] Transacción enviada satisfactoriamente. Firma:",
           signature,
         );
 
-        // Nosotros mismos manejamos la confirmación para evitar que el wallet adapter se bloquee.
-        const latestBlockhash =
-          await connection.getLatestBlockhash("confirmed");
+        // Confirmar la transacción
         const confirmation = await connection.confirmTransaction(
           {
             signature,
-            ...latestBlockhash,
+            blockhash,
+            lastValidBlockHeight,
           },
           "confirmed",
         );
@@ -399,7 +396,7 @@ export function useContract() {
         }
 
         console.log(
-          "[useContract] ¡Pago con EURT confirmado exitosamente en la red!",
+          "[useContract] ¡Pago con EURT confirmado exitosamente!",
         );
 
         // Disparar el evento global para que la UI de balance se actualice
@@ -456,27 +453,83 @@ export function useContract() {
   );
 
   const createInvoice = useCallback(
-    async (companyId: number) => {
-      if (!program || !publicKey) return null;
+    async (
+      companyId: string,
+      totalAmount: string,
+      paymentTxHash: string,
+      ipfsCid: string,
+    ) => {
+      if (!program || !publicKey || !sendTransaction) return null;
 
       try {
-        const totalString = await calculateTotal();
-        const totalAmountInCents = Math.round(parseFloat(totalString) * 100);
-        if (totalAmountInCents <= 0) return null;
+        console.warn("[useContract] createInvoice is currently disabled.");
+        return null;
+        /*
 
-        // Mock invoice creation since the instruction is not in the ABI
-        console.log(
-          "[useContract] Mocking invoice creation for company:",
-          companyId,
+        const companyIdBN = new BN(companyId);
+
+        console.log("[useContract] Registrando factura en Solana...");
+
+        const [globalStatePda] = PublicKey.findProgramAddressSync(
+          [Buffer.from("global-state")],
+          program.programId,
         );
-        const mockInvoiceId = Math.floor(Math.random() * 1000000);
-        return mockInvoiceId;
+        const globalState: any =
+          await (program.account as any).globalState.fetch(globalStatePda);
+        const nextInvoiceId = globalState.nextInvoiceId;
+
+        const [invoicePda] = PublicKey.findProgramAddressSync(
+          [Buffer.from("invoice"), nextInvoiceId.toArrayLike(Buffer, "le", 8)],
+          program.programId,
+        );
+
+        const [cartPda] = PublicKey.findProgramAddressSync(
+          [Buffer.from("shopping-cart"), publicKey.toBuffer()],
+          program.programId,
+        );
+
+        const createInvoiceIx = await (program.methods as any)
+          .createInvoice(companyIdBN, totalAmountInUnits, ipfsCid)
+          .accounts({
+            globalState: globalStatePda,
+            invoice: invoicePda,
+            cart: cartPda,
+            user: publicKey,
+            systemProgram: SystemProgram.programId,
+          } as any)
+          .instruction();
+
+        const tx = new Transaction().add(createInvoiceIx);
+        const { blockhash } = await connection.getLatestBlockhash("confirmed");
+        tx.recentBlockhash = blockhash;
+        tx.feePayer = publicKey;
+
+        const signature = await sendTransaction(tx, connection, {
+          skipPreflight: true,
+          preflightCommitment: "confirmed",
+        });
+
+        const latestBlockhash =
+          await connection.getLatestBlockhash("confirmed");
+        await connection.confirmTransaction(
+          {
+            signature,
+            ...latestBlockhash,
+          },
+          "confirmed",
+        );
+
+        console.log(
+          "[useContract] Factura registrada on-chain. Hash:",
+          signature,
+        );
+        */
       } catch (error) {
-        console.error("[useContract] Error creating invoice:", error);
+        console.error("[useContract] Error creando factura on-chain:", error);
         return null;
       }
     },
-    [program, publicKey, calculateTotal],
+    [program, publicKey, connection, sendTransaction],
   );
 
   const clearCart = useCallback(async () => {
@@ -495,44 +548,8 @@ export function useContract() {
       if (!program) return [];
 
       try {
-        const [globalStatePda] = PublicKey.findProgramAddressSync(
-          [Buffer.from("global_state")],
-          program.programId,
-        );
-        const globalState =
-          await program.account.globalState.fetch(globalStatePda);
-        const invoiceCount = (globalState as any).nextInvoiceId.toNumber();
-
-        if (invoiceCount <= 1) return [];
-
-        const customerPublicKey = new PublicKey(customerAddress);
-        const invoices = [];
-        for (let i = 1; i < invoiceCount; i++) {
-          try {
-            const [invoicePda] = PublicKey.findProgramAddressSync(
-              [Buffer.from("invoice"), new BN(i).toBuffer("le", 8)],
-              program.programId,
-            );
-            const invoice = await program.account.invoice.fetch(invoicePda);
-
-            if ((invoice as any).customerAddress.equals(customerPublicKey)) {
-              invoices.push({
-                invoiceId: (invoice as any).invoiceId.toNumber(),
-                companyId: (invoice as any).companyId.toNumber(),
-                customerAddress: (invoice as any).customerAddress.toBase58(),
-                totalAmount: (
-                  (invoice as any).totalAmount.toNumber() / 100
-                ).toFixed(2),
-                timestamp: (invoice as any).timestamp.toNumber(),
-                isPaid: !!(invoice as any).status.paid,
-                paymentTxHash: (invoice as any).paymentTxHash,
-              });
-            }
-          } catch (err) {
-            console.warn(`[useContract] Could not fetch invoice ${i}`, err);
-          }
-        }
-        return invoices;
+        console.warn("[useContract] getCustomerInvoices is currently disabled as it's missing from the contract IDL.");
+        return [];
       } catch (error) {
         console.error("[useContract] Error fetching invoices:", error);
         return [];
@@ -555,24 +572,7 @@ export function useContract() {
     async (invoiceId: any) => {
       if (!program) return null;
       try {
-        const id = new BN(invoiceId);
-        const [invoicePda] = PublicKey.findProgramAddressSync(
-          [Buffer.from("invoice"), id.toBuffer("le", 8)],
-          program.programId,
-        );
-        const invoice = await program.account.invoice.fetch(invoicePda);
-
-        if (invoice) {
-          return {
-            invoiceId: (invoice as any).invoiceId.toNumber(),
-            companyId: (invoice as any).companyId.toNumber(),
-            customerAddress: (invoice as any).customerAddress.toBase58(),
-            totalAmount: (invoice as any).totalAmount, // BN in cents
-            timestamp: (invoice as any).timestamp.toNumber(),
-            isPaid: !!(invoice as any).status.paid,
-            paymentTxHash: (invoice as any).paymentTxHash,
-          };
-        }
+        console.warn("[useContract] getInvoice is currently disabled.");
         return null;
       } catch (error) {
         console.error(

@@ -8,7 +8,7 @@ use crate::constants::*;
 use crate::errors::EcommerceError;
 use crate::state::*;
 
-declare_id!("5vC8pVqZguD8NB4qrrULXkXoN5ebfdsZLitYLmqpJAQj");
+declare_id!("4ourUpEhfq64WVb1gRwR7fxkWbKZnMPmbx6D6dFwvGCq");
 
 #[program]
 pub mod solana_ecommerce {
@@ -253,6 +253,7 @@ pub mod solana_ecommerce {
         ctx: Context<CreateInvoice>,
         company_id: u64,
         total_amount: u64,
+        ipfs_cid: String,
     ) -> Result<()> {
         let global_state = &mut ctx.accounts.global_state;
         let cart = &mut ctx.accounts.cart;
@@ -268,6 +269,7 @@ pub mod solana_ecommerce {
         invoice.timestamp = clock.unix_timestamp;
         invoice.status = PaymentStatus::Pending;
         invoice.payment_tx_hash = String::new();
+        invoice.ipfs_cid = ipfs_cid;
 
         global_state.next_invoice_id = global_state
             .next_invoice_id

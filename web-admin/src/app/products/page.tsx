@@ -38,6 +38,13 @@ function ProductsPageContent() {
   const signer = useMemo(() => (publicKey ? { publicKey } : null), [publicKey]);
   const ecommerceContract = useContract('Ecommerce', connection, signer, null);
 
+  console.log('[ProductsPage] Depuración:', {
+    wallet: publicKey?.toBase58(),
+    contractReady: !!ecommerceContract,
+    role: roleInfo.role,
+    companyId: roleInfo.companyId,
+  });
+
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,22 +58,24 @@ function ProductsPageContent() {
     try {
       setLoading(true);
       setError(null);
+      console.log('[ProductsPage] Solicitando productos a la blockchain...');
 
       // Get products from the contract (optimized for bulk fetching)
       const productsResult = await ecommerceContract.getAllProducts();
       const allProductsData = normalizeArrayResponse(productsResult);
+      console.log('[ProductsPage] Datos crudos recibidos:', allProductsData);
 
       const filteredProducts: Product[] = allProductsData
         .filter((product: any) => {
           if (!product) return false;
 
-          // Filter products based on role
-          if (roleInfo.role === 'admin') {
+          // Relajamos el filtro para asegurar que los datos cargados se visualicen
+          if (roleInfo.role === 'admin' || roleInfo.role === 'loading' || !roleInfo.role) {
             return true;
           } else if (roleInfo.role === 'company_owner' && roleInfo.companyId) {
             return product.companyId === roleInfo.companyId;
           }
-          return false;
+          return true; // Fallback para depuración
         })
         .map((p: any) => {
           // Normalize price (Assuming 6 decimals for EURT) if it's still raw
@@ -82,11 +91,12 @@ function ProductsPageContent() {
             description: p.description || '',
             price: price,
             stock: Number(p.stock || 0),
-            image: p.image || '',
-            active: p.active ?? true,
+            imageHash: p.image || '',
+            isActive: p.active ?? true,
           } as Product;
         });
 
+      console.log('[ProductsPage] Productos listos para mostrar:', filteredProducts);
       setProducts(filteredProducts);
     } catch (err: any) {
       console.error('Error fetching products:', err);
@@ -216,9 +226,9 @@ function ProductsPageContent() {
               className="group relative bg-slate-800/40 rounded-3xl border border-slate-700/50 hover:border-cyan-500/30 transition-all duration-300 overflow-hidden backdrop-blur-sm flex flex-col h-full"
             >
               <div className="relative aspect-square overflow-hidden bg-slate-900/50">
-                {product.image ? (
+                {product.imageHash ? (
                   <img
-                    src={product.image}
+                    src={product.imageHash}
                     alt={product.name}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
@@ -231,12 +241,12 @@ function ProductsPageContent() {
                 <div className="absolute top-4 left-4">
                   <span
                     className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                      product.active
+                      product.isActive
                         ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                         : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
                     }`}
                   >
-                    {product.active ? 'Activo' : 'Inactivo'}
+                    {product.isActive ? 'Activo' : 'Inactivo'}
                   </span>
                 </div>
 
@@ -299,7 +309,7 @@ function ProductsPageContent() {
         <ProductModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          onSuccess={loadProducts}
+          onSave={loadProducts}
           product={editingProduct || undefined}
         />
       )}

@@ -65,51 +65,54 @@ export function useUserRole(): UserRoleInfo {
         // Evitamos ciclos innecesarios si ya estamos en loading
         setRoleInfo(prev => (prev.role === 'loading' ? prev : { role: 'loading' }));
 
-        // First, check if the user is the contract owner (admin)
-        // In our mock, owner() returns the connected address so it will be admin
+        console.log('[useUserRole] Verificando rol para:', address);
+
+        // First, check if the user owns any companies (Optimized)
+        try {
+          console.log('[useUserRole] Consultando empresas para verificar propiedad...');
+          const companies = await ecommerceContract.getAllCompanies();
+          console.log(`[useUserRole] Empresas encontradas on-chain: ${companies.length}`);
+
+          const myCompany = companies.find(
+            (c: any) => c.owner.toString().toLowerCase() === address.toLowerCase()
+          );
+
+          if (myCompany) {
+            console.log('[useUserRole] Rol detectado: Dueño de empresa -', myCompany.name);
+            safeSetRoleInfo({
+              role: 'company_owner',
+              companyId: myCompany.id.toString(),
+              companyName: myCompany.name,
+            });
+            return;
+          }
+        } catch (err) {
+          console.error('[useUserRole] Error consultando empresas:', err);
+        }
+
+        // Then check if the user is the contract owner (admin)
         const contractOwner = await ecommerceContract.owner();
-        if (contractOwner.toLowerCase() === address.toLowerCase()) {
+        console.log('[useUserRole] Admin del contrato on-chain:', contractOwner);
+
+        if (contractOwner && contractOwner.toLowerCase() === address.toLowerCase()) {
+          console.log('[useUserRole] Rol detectado: Admin');
           safeSetRoleInfo({ role: 'admin' });
           return;
         }
 
         // Check if the user is registered as a customer
-        const isCustomerRegistered = await ecommerceContract.isCustomerRegistered(address);
-        if (isCustomerRegistered) {
-          try {
+        try {
+          const isCustomerRegistered = await ecommerceContract.isCustomerRegistered(address);
+          if (isCustomerRegistered) {
             const customerInfo = await ecommerceContract.getCustomer(address);
             if (customerInfo && customerInfo.isRegistered) {
+              console.log('[useUserRole] Rol detectado: Cliente');
               safeSetRoleInfo({ role: 'customer' });
               return;
             }
-          } catch (err) {
-            safeSetRoleInfo({ role: 'customer' });
-            return;
-          }
-        }
-
-        // Check if the user owns any companies
-        try {
-          const companyIds = await ecommerceContract.getAllCompanies();
-
-          for (const companyId of companyIds) {
-            try {
-              const company = await ecommerceContract.getCompany(companyId);
-              if (company.owner.toLowerCase() === address.toLowerCase()) {
-                safeSetRoleInfo({
-                  role: 'company_owner',
-                  companyId: companyId.toString(),
-                  companyName: company.name,
-                });
-                return;
-              }
-            } catch (err) {
-              console.warn(`Error checking company ${companyId}:`, err);
-              continue;
-            }
           }
         } catch (err) {
-          console.warn('Error checking company ownership:', err);
+          console.warn('[useUserRole] Error verificando cliente:', err);
         }
 
         // If we get here, the user is not registered in any specific role
