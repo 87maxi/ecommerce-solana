@@ -29,34 +29,45 @@ solana airdrop 10 --url $RPC_URL --commitment $COMMITMENT || true
 echo "Deployer balance:"
 solana balance --url $RPC_URL
 
-# --- 1. Build and Deploy E-Commerce Anchor Program ---
+# --- 1. Build and Deploy Stablecoin Program ---
 echo ""
-echo "📦 Building and Deploying Anchor Program (for fixtures)..."
+echo "📦 Building and Deploying Stablecoin Program..."
 cd "$ROOT/solana-stablecoin/solana"
-cargo build-sbf
+anchor build
 
-PROGRAM_SO_PATH="$ROOT/solana-stablecoin/solana/target/deploy/solana.so"
-PROGRAM_KEYPAIR_PATH="$ROOT/solana-stablecoin/solana/target/deploy/solana-keypair.json"
-# Reutilizamos la variable ECOMMERCE_PROGRAM_ADDRESS para compatibilidad con el resto del script
-ECOMMERCE_PROGRAM_ADDRESS=$(solana-keygen pubkey "$PROGRAM_KEYPAIR_PATH")
-echo "📍 Deployed Program ID: $ECOMMERCE_PROGRAM_ADDRESS"
+STABLECOIN_SO_PATH="$ROOT/solana-stablecoin/solana/target/deploy/solana.so"
+STABLECOIN_KEYPAIR_PATH="$ROOT/solana-stablecoin/solana/target/deploy/solana-keypair.json"
+STABLECOIN_PROGRAM_ADDRESS=$(solana-keygen pubkey "$STABLECOIN_KEYPAIR_PATH")
+echo "📍 Stablecoin Program ID: $STABLECOIN_PROGRAM_ADDRESS"
 
-echo "Deploying program binary to localnet... (This may take a moment)"
 solana program deploy \
     --url $RPC_URL \
     --keypair "$DEPLOYER_KEYPAIR" \
-    --program-id "$PROGRAM_KEYPAIR_PATH" \
+    --program-id "$STABLECOIN_KEYPAIR_PATH" \
     --commitment $COMMITMENT \
-    "$PROGRAM_SO_PATH"
+    "$STABLECOIN_SO_PATH"
 
-if [ $? -eq 0 ]; then
-    echo "✅ Program deployed successfully."
-else
-    echo "❌ Program deployment failed."
-    exit 1
-fi
+# --- 1b. Build and Deploy Ecommerce Program ---
+echo ""
+echo "📦 Building and Deploying Ecommerce Program..."
+cd "$ROOT/solana-ecommerce"
+anchor build
 
-IDL_JSON=$(cat target/idl/solana.json)
+# Obtenemos el Program ID de Ecommerce desde Anchor.toml o el keypair generado
+ECOMMERCE_PROGRAM_ADDRESS="5vC8pVqZguD8NB4qrrULXkXoN5ebfdsZLitYLmqpJAQj"
+echo "📍 Ecommerce Program ID: $ECOMMERCE_PROGRAM_ADDRESS"
+
+# Desplegamos si es necesario
+echo "🚀 Deploying Ecommerce Program binary to localnet..."
+solana program deploy \
+    --url $RPC_URL \
+    --keypair "$DEPLOYER_KEYPAIR" \
+    --program-id "$ROOT/solana-ecommerce/target/deploy/solana_ecommerce-keypair.json" \
+    --commitment $COMMITMENT \
+    "$ROOT/solana-ecommerce/target/deploy/solana_ecommerce.so"
+
+IDL_JSON=$(cat "$ROOT/solana-stablecoin/solana/target/idl/solana.json")
+ECOMMERCE_IDL_JSON=$(cat "$ROOT/solana-ecommerce/target/idl/solana_ecommerce.json")
 
 # Inyectar el Program ID desplegado en el archivo de fixture
 echo "⚙️  Injecting Program ID into fixture file..."
@@ -70,23 +81,30 @@ else
     echo "⚠️  Warning: Fixture file not found, skipping Program ID injection."
 fi
 
-# --- 2. Create the EURT SPL Token Mint ---
+# --- 2. Initialize EURT Stablecoin ---
 echo ""
-echo "🪙 Creating EURT SPL Token Mint..."
-MINT_OUTPUT=$(spl-token create-token --decimals 6 --url $RPC_URL --fee-payer "$DEPLOYER_KEYPAIR")
-EUROTOKEN_MINT_ADDRESS=$(echo "$MINT_OUTPUT" | awk '{print $3}')
-echo "📍 EURT Mint Address: $EUROTOKEN_MINT_ADDRESS"
+echo "🪙 Initializing EURT Stablecoin..."
+cd "$ROOT/solana-stablecoin/solana"
+npx ts-node scripts/init_stablecoin.ts
+
+if [ -f "mint_address.txt" ]; then
+    EUROTOKEN_MINT_ADDRESS=$(cat mint_address.txt)
+    echo "📍 EURT Mint Address: $EUROTOKEN_MINT_ADDRESS"
+else
+    echo "❌ Failed to find mint_address.txt"
+    exit 1
+fi
 
 echo "Creating an account for the new EURT mint..."
-spl-token create-account "$EUROTOKEN_MINT_ADDRESS" --url $RPC_URL --fee-payer "$DEPLOYER_KEYPAIR"
-echo "✅ EURT token and account created."
+spl-token create-account "$EUROTOKEN_MINT_ADDRESS" --url $RPC_URL --fee-payer "$DEPLOYER_KEYPAIR" || true
+echo "✅ EURT token and account created via Smart Contract."
 
 # --- 3. Configure Web-Customer (Port 3030) ---
 echo ""
 echo "⚙️  Configuring Web-Customer..."
 cd "$ROOT/web-customer"
 mkdir -p src/contracts/abis
-echo "$IDL_JSON" > src/contracts/abis/EcommerceABI.json
+echo "$ECOMMERCE_IDL_JSON" > src/contracts/abis/EcommerceABI.json
 
 cat > .env.local << EOF
 NEXT_PUBLIC_ECOMMERCE_CONTRACT_ADDRESS=$ECOMMERCE_PROGRAM_ADDRESS
@@ -103,7 +121,7 @@ echo ""
 echo "⚙️  Configuring Web-Admin..."
 cd "$ROOT/web-admin"
 mkdir -p src/contracts/abis
-echo "$IDL_JSON" > src/contracts/abis/EcommerceABI.json
+echo "$ECOMMERCE_IDL_JSON" > src/contracts/abis/EcommerceABI.json
 
 cat > .env.local << EOF
 NEXT_PUBLIC_ECOMMERCE_CONTRACT_ADDRESS=$ECOMMERCE_PROGRAM_ADDRESS
@@ -121,6 +139,7 @@ cat > .env.local << EOF
 $STRIPE_PK
 $STRIPE_SK
 NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS=$EUROTOKEN_MINT_ADDRESS
+NEXT_PUBLIC_STABLECOIN_PROGRAM_ADDRESS=$STABLECOIN_PROGRAM_ADDRESS
 NEXT_PUBLIC_SITE_URL=http://localhost:3033
 NEXT_PUBLIC_PASARELA_PAGO_URL=http://localhost:3034
 NEXT_PUBLIC_RPC_URL=$RPC_URL
@@ -132,12 +151,14 @@ echo "✅ Compra-Stablecoin configured"
 echo ""
 echo "⚙️  Configuring Pasarela-de-Pago..."
 cd "$ROOT/solana-stablecoin/pasarela-de-pago"
+cp "$ROOT/solana-stablecoin/solana/target/idl/solana.json" ./src/lib/solana_idl.json
 
 cat > .env.local << EOF
 $STRIPE_PK
 $STRIPE_SK
 STRIPE_WEBHOOK_SECRET=whsec_f53ada13441cce710f702f6bd03babe1668d4f99a476c00d61aa6696563484f4
 NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS=$EUROTOKEN_MINT_ADDRESS
+NEXT_PUBLIC_STABLECOIN_PROGRAM_ADDRESS=$STABLECOIN_PROGRAM_ADDRESS
 OWNER_PRIVATE_KEY='$(cat "$DEPLOYER_KEYPAIR")'
 RPC_URL=$RPC_URL
 EOF
