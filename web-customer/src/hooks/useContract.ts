@@ -9,6 +9,7 @@ import {
 } from "@solana/web3.js";
 import { Program, AnchorProvider, Idl, BN } from "@coral-xyz/anchor";
 import { Buffer } from "buffer";
+import bs58 from "bs58";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import {
   getAssociatedTokenAddress,
@@ -21,7 +22,8 @@ const PROGRAM_ID = process.env.NEXT_PUBLIC_ECOMMERCE_CONTRACT_ADDRESS || "";
 
 export function useContract() {
   const { connection } = useConnection();
-  const { publicKey, sendTransaction } = useWallet();
+  const { publicKey, sendTransaction, signTransaction, signAllTransactions } =
+    useWallet();
   const walletAddress = publicKey?.toBase58();
 
   const [program, setProgram] = useState<Program | null>(null);
@@ -30,7 +32,13 @@ export function useContract() {
   const initializationAttempted = useRef(false);
 
   // Stable signer object for AnchorProvider
-  const signer = useMemo(() => (publicKey ? { publicKey } : null), [publicKey]);
+  const signer = useMemo(
+    () =>
+      publicKey && signTransaction && signAllTransactions
+        ? { publicKey, signTransaction, signAllTransactions }
+        : null,
+    [publicKey, signTransaction, signAllTransactions],
+  );
 
   // Initialize the Anchor Program
   useEffect(() => {
@@ -109,119 +117,292 @@ export function useContract() {
   }, [walletAddress]);
 
   const checkAndRegisterCustomer = useCallback(async (): Promise<boolean> => {
-    // El programa actual en Surfpool no soporta registro de clientes en la blockchain.
-    // Retornamos true para no bloquear el flujo de la aplicación.
-    return true;
-  }, []);
+    if (!program || !publicKey) return false;
+    try {
+      const [customerPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("customer"), publicKey.toBuffer()],
+        program.programId,
+      );
+
+      const customerAccountObj =
+        (program.account as any).customer || (program.account as any).Customer;
+      if (!customerAccountObj) return true;
+
+      try {
+        await customerAccountObj.fetch(customerPda);
+        console.log("[useContract] Customer already registered.");
+        return true;
+      } catch (err: any) {
+        if (
+          err.message?.includes("Account does not exist") ||
+          err.message?.includes("AccountNotFound")
+        ) {
+          console.log("[useContract] Registering customer...");
+
+          const method = program.methods.registerCustomer
+            ? program.methods.registerCustomer()
+            : (program.methods as any).register_customer();
+
+          const tx = await method
+            .accounts({
+              customer: customerPda,
+              user: publicKey,
+              systemProgram: SystemProgram.programId,
+            } as any)
+            .rpc();
+          console.log("[useContract] Customer registered. Hash:", tx);
+          return true;
+        }
+        throw err;
+      }
+    } catch (error) {
+      console.error(
+        "[useContract] Error checking/registering customer:",
+        error,
+      );
+      return false;
+    }
+  }, [program, publicKey]);
 
   const getAllProducts = useCallback(async () => {
     if (!program) return [];
 
     try {
       console.log(
-        "[useContract] Fetching all product accounts from blockchain...",
+        "[useContract] Fetching all product accounts with robust decoding...",
       );
-      // En el contrato actual desplegado (4ourUp), no hay un contador global de productos.
-      // Usamos .all() para obtener todas las cuentas de tipo 'product'.
-      const productAccounts = await (program.account as any).product.all();
 
-      const products = productAccounts.map((p: any) => {
-        const data = p.account;
-        return {
-          // Use the PublicKey as ID since numeric ID was removed
-          id: p.publicKey.toBase58(),
-          // Use company pubkey instead of companyId
-          companyId: data.company?.toBase58() || "Unknown",
-          name: data.name,
-          description: "Calidad premium garantizada en Solana E-Shop",
-          price: (data.price.toNumber() / 1000000).toFixed(2),
-          stock: data.stock.toNumber(),
-          image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800",
-          active: true,
-        };
-      });
+      const account =
+        (program.account as any).product || (program.account as any).Product;
+      if (!account) throw new Error('Account "product" not found in program');
 
-      console.log(`[useContract] Found ${products.length} products.`);
-      return products;
+      const coder = program.coder.accounts;
+      const discriminator =
+        (account as any).discriminator ||
+        Buffer.from([102, 76, 55, 251, 38, 73, 224, 229]);
+
+      const rawAccounts = await connection.getProgramAccounts(
+        program.programId,
+        {
+          filters: [
+            { memcmp: { offset: 0, bytes: bs58.encode(discriminator) } },
+          ],
+        },
+      );
+
+      const products: any[] = [];
+      for (const { pubkey, account: accountInfo } of rawAccounts) {
+        try {
+          const decoded =
+            coder.decode("product", accountInfo.data) ||
+            coder.decode("Product", accountInfo.data);
+          products.push({ publicKey: pubkey, account: decoded });
+        } catch (e: any) {
+          console.warn(
+            `[useContract] Skipping malformed product account ${pubkey.toBase58()}: ${e.message}`,
+          );
+        }
+      }
+
+      const formattedProducts = products.map((p: any) => ({
+        ...p.account,
+        id: p.account.id?.toString() ?? p.publicKey.toBase58(),
+        publicKey: p.publicKey.toBase58(),
+        companyId:
+          (p.account as any).company_id?.toString() ??
+          (p.account as any).companyId?.toString() ??
+          "Unknown",
+        name: p.account.name,
+        // Description, image, and is_active were removed from the on-chain program to save space
+        description: "Premium quality guaranteed at Solana E-Shop",
+        price: (Number(p.account.price) / 1000000).toFixed(2),
+        stock: Number(p.account.stock),
+        image:
+          "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800",
+        active: true,
+      }));
+
+      console.log(
+        `[useContract] Found ${formattedProducts.length} valid products.`,
+      );
+      return formattedProducts;
     } catch (error) {
       console.error("[useContract] Error fetching products:", error);
       return [];
     }
-  }, [program]);
+  }, [program, connection]);
 
   const getCart = useCallback(async () => {
-    if (!walletAddress) return [];
+    if (!program || !publicKey) return [];
     try {
-      const cartData = localStorage.getItem(`cart_${walletAddress}`);
-      return cartData ? JSON.parse(cartData) : [];
-    } catch (error) {
+      const [cartPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("shopping-cart"), publicKey.toBuffer()],
+        program.programId,
+      );
+
+      const cartAccountObj =
+        (program.account as any).shoppingCart ||
+        (program.account as any).ShoppingCart;
+      if (!cartAccountObj) return [];
+
+      const cartAccount = await cartAccountObj.fetch(cartPda);
+      if (!cartAccount || !cartAccount.items) return [];
+
+      return cartAccount.items.map((item: any) => ({
+        productId: (item.product_id ?? item.productId).toString(),
+        quantity: Number(item.quantity),
+      }));
+    } catch (error: any) {
+      if (!error.message?.includes("Account does not exist")) {
+        console.error("[useContract] Error fetching on-chain cart:", error);
+      }
       return [];
     }
-  }, [walletAddress]);
+  }, [program, publicKey]);
 
   const addToCart = useCallback(
     async (productId: string, quantity: number) => {
-      if (!walletAddress) return false;
+      if (!program || !publicKey) return false;
       try {
-        const cart = await getCart();
-        const existingItem = cart.find(
-          (item: any) => item.productId === productId,
+        const [cartPda] = PublicKey.findProgramAddressSync(
+          [Buffer.from("shopping-cart"), publicKey.toBuffer()],
+          program.programId,
         );
-        let newCart;
-        if (existingItem) {
-          newCart = cart.map((item: any) =>
-            item.productId === productId
-              ? { ...item, quantity: item.quantity + quantity }
-              : item,
-          );
-        } else {
-          newCart = [...cart, { productId, quantity }];
-        }
-        localStorage.setItem(`cart_${walletAddress}`, JSON.stringify(newCart));
+
+        // Ensure we call the method on the methods object to preserve context
+        // and handle both camelCase and snake_case names from the IDL
+        const method = program.methods.addToCart
+          ? program.methods.addToCart(new BN(productId), new BN(quantity))
+          : (program.methods as any).add_to_cart(
+              new BN(productId),
+              new BN(quantity),
+            );
+
+        const tx = await method
+          .accounts({
+            cart: cartPda,
+            user: publicKey,
+            systemProgram: SystemProgram.programId,
+          } as any)
+          .rpc();
+
+        console.log("[useContract] Successfully added to cart. Hash:", tx);
+        window.dispatchEvent(new Event("cart-updated"));
         return true;
       } catch (error) {
         console.error("[useContract] Error adding to cart:", error);
         return false;
       }
     },
-    [walletAddress, getCart],
+    [program, publicKey],
   );
 
   const removeFromCart = useCallback(
     async (productId: string) => {
-      if (!walletAddress) return false;
+      if (!program || !publicKey) return false;
       try {
-        const cart = await getCart();
-        const newCart = cart.filter(
-          (item: any) => item.productId !== productId,
+        const [cartPda] = PublicKey.findProgramAddressSync(
+          [Buffer.from("shopping-cart"), publicKey.toBuffer()],
+          program.programId,
         );
-        localStorage.setItem(`cart_${walletAddress}`, JSON.stringify(newCart));
+
+        // Ensure we call the method on the methods object to preserve context
+        const method = program.methods.removeFromCart
+          ? program.methods.removeFromCart(new BN(productId))
+          : (program.methods as any).remove_from_cart(new BN(productId));
+
+        const tx = await method
+          .accounts({
+            cart: cartPda,
+            user: publicKey,
+            systemProgram: SystemProgram.programId,
+          } as any)
+          .rpc();
+
+        console.log("[useContract] Successfully removed from cart. Hash:", tx);
+        window.dispatchEvent(new Event("cart-updated"));
         return true;
       } catch (error) {
         console.error("[useContract] Error removing from cart:", error);
         return false;
       }
     },
-    [walletAddress, getCart],
+    [program, publicKey],
   );
 
   const updateQuantity = useCallback(
     async (productId: string, quantity: number) => {
-      if (!walletAddress) return false;
+      if (!program || !publicKey) return false;
       try {
-        const cart = await getCart();
-        const newCart = cart.map((item: any) =>
-          item.productId === productId ? { ...item, quantity } : item,
+        const [cartPda] = PublicKey.findProgramAddressSync(
+          [Buffer.from("shopping-cart"), publicKey.toBuffer()],
+          program.programId,
         );
-        localStorage.setItem(`cart_${walletAddress}`, JSON.stringify(newCart));
+
+        // Ensure we call the method on the methods object to preserve context
+        const method = program.methods.updateQuantity
+          ? program.methods.updateQuantity(new BN(productId), new BN(quantity))
+          : (program.methods as any).update_quantity(
+              new BN(productId),
+              new BN(quantity),
+            );
+
+        const tx = await method
+          .accounts({
+            cart: cartPda,
+            user: publicKey,
+            systemProgram: SystemProgram.programId,
+          } as any)
+          .rpc();
+
+        console.log(
+          "[useContract] Successfully updated cart quantity. Hash:",
+          tx,
+        );
+        window.dispatchEvent(new Event("cart-updated"));
         return true;
       } catch (error) {
         console.error("[useContract] Error updating quantity:", error);
         return false;
       }
     },
-    [walletAddress, getCart],
+    [program, publicKey],
   );
+
+  const clearCart = useCallback(async () => {
+    if (!program || !publicKey) return false;
+    try {
+      const [cartPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("shopping-cart"), publicKey.toBuffer()],
+        program.programId,
+      );
+
+      // Ensure we call the method on the methods object to preserve context
+      const method = program.methods.clearCart
+        ? program.methods.clearCart()
+        : (program.methods as any).clear_cart();
+
+      const tx = await method
+        .accounts({
+          cart: cartPda,
+          user: publicKey,
+          systemProgram: SystemProgram.programId,
+        } as any)
+        .rpc();
+
+      console.log("[useContract] Successfully cleared cart. Hash:", tx);
+      window.dispatchEvent(new Event("cart-updated"));
+      return true;
+    } catch (error) {
+      console.error("[useContract] Error clearing cart:", error);
+      return false;
+    }
+  }, [program, publicKey]);
+
+  const getCartItemCount = useCallback(async () => {
+    const items = await getCart();
+    return items.reduce((acc: number, item: any) => acc + item.quantity, 0);
+  }, [getCart]);
 
   const calculateTotal = useCallback(async () => {
     if (!program || !publicKey) return "0.00";
@@ -338,7 +519,9 @@ export function useContract() {
         }
 
         // 4. Agregar la instrucción de transferencia (TransferChecked)
-        console.log("[useContract] Agregando transferencia de tokens a la transacción...");
+        console.log(
+          "[useContract] Agregando transferencia de tokens a la transacción...",
+        );
         transaction.add(
           createTransferCheckedInstruction(
             userAta, // Cuenta de origen
@@ -351,13 +534,18 @@ export function useContract() {
         );
 
         // Get latest blockhash
-        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+        const { blockhash, lastValidBlockHeight } =
+          await connection.getLatestBlockhash("confirmed");
         transaction.recentBlockhash = blockhash;
         transaction.feePayer = publicKey;
 
-        console.log("[useContract] Solicitando firma y envío de la transacción combinada...");
-        console.log(`[useContract] Instrucciones en la transacción: ${transaction.instructions.length}`);
-        
+        console.log(
+          "[useContract] Solicitando firma y envío de la transacción combinada...",
+        );
+        console.log(
+          `[useContract] Instrucciones en la transacción: ${transaction.instructions.length}`,
+        );
+
         // Enviamos la transacción completa
         let signature: string;
         try {
@@ -366,10 +554,15 @@ export function useContract() {
             preflightCommitment: "confirmed", // Usamos confirmed para mayor seguridad
           });
         } catch (signError: any) {
-          console.error("[useContract] Error crítico al firmar/enviar:", signError);
+          console.error(
+            "[useContract] Error crítico al firmar/enviar:",
+            signError,
+          );
           // Si el error contiene "Plugin Closed", intentamos dar más contexto
           if (signError.message?.includes("Plugin Closed")) {
-             throw new Error("La wallet se cerró (Plugin Closed). Esto puede ocurrir por un timeout o un fallo en la simulación de la extensión.");
+            throw new Error(
+              "La wallet se cerró (Plugin Closed). Esto puede ocurrir por un timeout o un fallo en la simulación de la extensión.",
+            );
           }
           throw signError;
         }
@@ -395,9 +588,7 @@ export function useContract() {
           );
         }
 
-        console.log(
-          "[useContract] ¡Pago con EURT confirmado exitosamente!",
-        );
+        console.log("[useContract] ¡Pago con EURT confirmado exitosamente!");
 
         // Disparar el evento global para que la UI de balance se actualice
         window.dispatchEvent(new Event("refresh-eurt-balance"));
@@ -462,24 +653,31 @@ export function useContract() {
       if (!program || !publicKey || !sendTransaction) return null;
 
       try {
-        console.warn("[useContract] createInvoice is currently disabled.");
-        return null;
-        /*
+        console.log("Registrando factura en el Smart Contract...");
 
         const companyIdBN = new BN(companyId);
-
-        console.log("[useContract] Registrando factura en Solana...");
+        const totalAmountBN = new BN(
+          Math.round(parseFloat(totalAmount) * 1000000),
+        );
 
         const [globalStatePda] = PublicKey.findProgramAddressSync(
           [Buffer.from("global-state")],
           program.programId,
         );
-        const globalState: any =
-          await (program.account as any).globalState.fetch(globalStatePda);
-        const nextInvoiceId = globalState.nextInvoiceId;
+
+        const globalStateAccount =
+          (program.account as any).globalState ||
+          (program.account as any).GlobalState;
+        if (!globalStateAccount)
+          throw new Error('Account "globalState" not found in program');
+        const globalStateRaw: any =
+          await globalStateAccount.fetch(globalStatePda);
 
         const [invoicePda] = PublicKey.findProgramAddressSync(
-          [Buffer.from("invoice"), nextInvoiceId.toArrayLike(Buffer, "le", 8)],
+          [
+            Buffer.from("invoice"),
+            globalStateRaw.nextInvoiceId.toArrayLike(Buffer, "le", 8),
+          ],
           program.programId,
         );
 
@@ -488,8 +686,8 @@ export function useContract() {
           program.programId,
         );
 
-        const createInvoiceIx = await (program.methods as any)
-          .createInvoice(companyIdBN, totalAmountInUnits, ipfsCid)
+        const tx = await program.methods
+          .createInvoice(companyIdBN, totalAmountBN, ipfsCid)
           .accounts({
             globalState: globalStatePda,
             invoice: invoicePda,
@@ -497,76 +695,71 @@ export function useContract() {
             user: publicKey,
             systemProgram: SystemProgram.programId,
           } as any)
-          .instruction();
+          .rpc();
 
-        const tx = new Transaction().add(createInvoiceIx);
-        const { blockhash } = await connection.getLatestBlockhash("confirmed");
-        tx.recentBlockhash = blockhash;
-        tx.feePayer = publicKey;
+        console.log("Factura registrada exitosamente on-chain. Firma:", tx);
 
-        const signature = await sendTransaction(tx, connection, {
-          skipPreflight: true,
-          preflightCommitment: "confirmed",
-        });
-
-        const latestBlockhash =
-          await connection.getLatestBlockhash("confirmed");
-        await connection.confirmTransaction(
-          {
-            signature,
-            ...latestBlockhash,
-          },
-          "confirmed",
+        // Llamar a process_payment
+        const [customerPda] = PublicKey.findProgramAddressSync(
+          [Buffer.from("customer"), publicKey.toBuffer()],
+          program.programId,
         );
 
-        console.log(
-          "[useContract] Factura registrada on-chain. Hash:",
-          signature,
-        );
-        */
+        console.log("Procesando pago en el Smart Contract...");
+        const tx2 = await (
+          program.methods.processPayment ||
+          (program.methods as any).process_payment
+        )(paymentTxHash)
+          .accounts({
+            invoice: invoicePda,
+            customer: customerPda,
+            authority: publicKey,
+          } as any)
+          .rpc();
+        console.log("Pago procesado exitosamente on-chain. Firma:", tx2);
+
+        return tx;
       } catch (error) {
-        console.error("[useContract] Error creando factura on-chain:", error);
+        console.error("Error al registrar factura on-chain:", error);
         return null;
       }
     },
     [program, publicKey, connection, sendTransaction],
   );
 
-  const clearCart = useCallback(async () => {
-    if (!walletAddress) return false;
-    try {
-      localStorage.removeItem(`cart_${walletAddress}`);
-      return true;
-    } catch (error) {
-      console.error("[useContract] Error clearing cart:", error);
-      return false;
-    }
-  }, [walletAddress]);
-
   const getCustomerInvoices = useCallback(
     async (customerAddress: string) => {
       if (!program) return [];
 
       try {
-        console.warn("[useContract] getCustomerInvoices is currently disabled as it's missing from the contract IDL.");
-        return [];
+        console.log("[useContract] Obteniendo facturas del cliente...");
+        const invoiceAccount =
+          (program.account as any).invoice || (program.account as any).Invoice;
+        if (!invoiceAccount)
+          throw new Error("Account 'invoice' not found in program IDL");
+
+        // Fetch all invoices for this customer
+        const allInvoices = await invoiceAccount.all([
+          {
+            memcmp: {
+              offset: 8 + 8 + 8, // discriminator + id + company_id
+              bytes: customerAddress,
+            },
+          },
+        ]);
+
+        return allInvoices.map((inv: any) => ({
+          ...inv.account,
+          id: inv.account.invoiceId.toString(),
+          publicKey: inv.publicKey,
+        }));
       } catch (error) {
-        console.error("[useContract] Error fetching invoices:", error);
+        console.error("[useContract] Error al obtener facturas:", error);
         return [];
       }
     },
     [program],
   );
-
-  const getCartItemCount = useCallback(async () => {
-    if (!program || !publicKey) return 0;
-    try {
-      const items = await getCart();
-      return items.reduce((acc: number, item: any) => acc + item.quantity, 0);
-    } catch (error) {
-      return 0;
-    }
-  }, [program, publicKey, getCart]);
 
   const getInvoice = useCallback(
     async (invoiceId: any) => {

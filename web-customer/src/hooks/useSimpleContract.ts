@@ -11,11 +11,14 @@ const PROGRAM_ID = process.env.NEXT_PUBLIC_ECOMMERCE_CONTRACT_ADDRESS || "";
 export function useSimpleContract() {
   const [program, setProgram] = useState<Program | null>(null);
   const { connection } = useConnection();
-  const { publicKey } = useWallet();
+  const { publicKey, signTransaction, signAllTransactions } = useWallet();
   const address = publicKey?.toBase58();
 
   // Mock signer for read-only operations
-  const signer = publicKey ? { publicKey } : null;
+  const signer =
+    publicKey && signTransaction && signAllTransactions
+      ? { publicKey, signTransaction, signAllTransactions }
+      : null;
 
   useEffect(() => {
     let isMounted = true;

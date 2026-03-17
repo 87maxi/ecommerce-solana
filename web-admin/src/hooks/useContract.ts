@@ -47,10 +47,10 @@ export function useContract(
     try {
       // Configuramos un firmante de respaldo para modo lectura si no hay wallet
       const effectiveSigner =
-        signer && signer.publicKey
+        signer && signer.publicKey && signer.signTransaction
           ? signer
           : {
-              publicKey: PublicKey.default,
+              publicKey: signer?.publicKey || PublicKey.default,
               signTransaction: async (tx: any) => tx,
               signAllTransactions: async (txs: any[]) => txs,
             };
@@ -85,27 +85,37 @@ export function useContract(
             // Manual fetch and decode to handle legacy data gracefully
             const programId = program.programId;
             const coder = program.coder.accounts;
-            const discriminator = (account as any).discriminator || Buffer.from([32, 212, 52, 137, 90, 7, 206, 183]);
-            
+            const discriminator =
+              (account as any).discriminator || Buffer.from([32, 212, 52, 137, 90, 7, 206, 183]);
+
             // Note: provider here is the Connection object passed to the hook
             const rawAccounts = await provider.getProgramAccounts(programId, {
-              filters: [{ memcmp: { offset: 0, bytes: bs58.encode(discriminator) } }]
+              filters: [{ memcmp: { offset: 0, bytes: bs58.encode(discriminator) } }],
             });
 
-            console.log(`[useContract] Encontradas ${rawAccounts.length} cuentas de empresas potenciales.`);
-            
+            console.log(
+              `[useContract] Encontradas ${rawAccounts.length} cuentas de empresas potenciales.`
+            );
+
             const companies: any[] = [];
             for (const { pubkey, account: accountInfo } of rawAccounts) {
               try {
                 // Try decoding with potential naming variations
-                const decoded = coder.decode('company', accountInfo.data) || coder.decode('Company', accountInfo.data);
+                const decoded =
+                  coder.decode('company', accountInfo.data) ||
+                  coder.decode('Company', accountInfo.data);
                 companies.push({ publicKey: pubkey, account: decoded });
               } catch (decodeError: any) {
-                console.warn(`[useContract] Saltando cuenta legacy ${pubkey.toBase58()} (Error decoding: ${decodeError.message})`);
+                console.warn(
+                  `[useContract] Saltando cuenta legacy ${pubkey.toBase58()} (Error decoding: ${decodeError.message})`
+                );
               }
             }
 
-            console.log(`[useContract] Empresas decodificadas con éxito (${companies.length}):`, companies);
+            console.log(
+              `[useContract] Empresas decodificadas con éxito (${companies.length}):`,
+              companies
+            );
             return companies.map((c: any) => ({
               ...c.account,
               id: c.publicKey.toBase58(),
@@ -145,28 +155,38 @@ export function useContract(
             if (!account) throw new Error('Account "product" not found in program');
 
             const coder = program.coder.accounts;
-            const discriminator = (account as any).discriminator || Buffer.from([102, 76, 55, 251, 38, 73, 224, 229]);
-            
+            const discriminator =
+              (account as any).discriminator || Buffer.from([102, 76, 55, 251, 38, 73, 224, 229]);
+
             const rawAccounts = await provider.getProgramAccounts(program.programId, {
-              filters: [{ memcmp: { offset: 0, bytes: bs58.encode(discriminator) } }]
+              filters: [{ memcmp: { offset: 0, bytes: bs58.encode(discriminator) } }],
             });
 
             const products: any[] = [];
             for (const { pubkey, account: accountInfo } of rawAccounts) {
               try {
-                const decoded = coder.decode('product', accountInfo.data) || coder.decode('Product', accountInfo.data);
+                const decoded =
+                  coder.decode('product', accountInfo.data) ||
+                  coder.decode('Product', accountInfo.data);
                 products.push({ publicKey: pubkey, account: decoded });
               } catch (e: any) {
-                console.warn(`[useContract] Saltando producto legacy ${pubkey.toBase58()}: ${e.message}`);
+                console.warn(
+                  `[useContract] Saltando producto legacy ${pubkey.toBase58()}: ${e.message}`
+                );
               }
             }
 
             return products.map((p: any) => ({
               ...p.account,
               id: p.publicKey.toBase58(),
-              companyId: (p.account as any).companyId?.toString() || (p.account as any).company?.toBase58(),
+              companyId:
+                (p.account as any).company_id?.toString() ??
+                (p.account as any).companyId?.toString() ??
+                (p.account as any).company?.toBase58(),
               price: (p.account as any).price.toString(),
               stock: (p.account as any).stock.toNumber(),
+              description: 'Premium quality guaranteed at Solana E-Shop',
+              image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800',
               active: true,
             }));
           } catch (e) {
@@ -186,7 +206,8 @@ export function useContract(
             if (!account) throw new Error('Account "product" not found in program');
 
             const coder = program.coder.accounts;
-            const discriminator = (account as any).discriminator || Buffer.from([102, 76, 55, 251, 38, 73, 224, 229]);
+            const discriminator =
+              (account as any).discriminator || Buffer.from([102, 76, 55, 251, 38, 73, 224, 229]);
 
             const rawAccounts = await provider.getProgramAccounts(program.programId, {
               filters: [
@@ -203,19 +224,28 @@ export function useContract(
             const products: any[] = [];
             for (const { pubkey, account: accountInfo } of rawAccounts) {
               try {
-                const decoded = coder.decode('product', accountInfo.data) || coder.decode('Product', accountInfo.data);
+                const decoded =
+                  coder.decode('product', accountInfo.data) ||
+                  coder.decode('Product', accountInfo.data);
                 products.push({ publicKey: pubkey, account: decoded });
               } catch (e: any) {
-                console.warn(`[useContract] Saltando producto legacy ${pubkey.toBase58()} en getCompanyProducts: ${e.message}`);
+                console.warn(
+                  `[useContract] Saltando producto legacy ${pubkey.toBase58()} en getCompanyProducts: ${e.message}`
+                );
               }
             }
 
             return products.map((p: any) => ({
               ...p.account,
               id: p.publicKey.toBase58(),
-              companyId: (p.account as any).companyId?.toString() || (p.account as any).company?.toBase58(),
+              companyId:
+                (p.account as any).company_id?.toString() ??
+                (p.account as any).companyId?.toString() ??
+                (p.account as any).company?.toBase58(),
               price: (p.account as any).price.toString(),
               stock: (p.account as any).stock.toNumber(),
+              description: 'Premium quality guaranteed at Solana E-Shop',
+              image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800',
               active: true,
             }));
           } catch (e) {
@@ -227,14 +257,19 @@ export function useContract(
         getProduct: async (id: string | PublicKey) => {
           try {
             const pubkey = typeof id === 'string' ? new PublicKey(id) : id;
-            const account = (program.account as any).product || (program.account as any).product;
+            const account = (program.account as any).product || (program.account as any).Product;
             const data = (await account.fetch(pubkey)) as any;
             return {
               ...data,
-              id: pubkey.toBase58(),
-              companyId: data.company.toBase58(),
+              id: data.id?.toString() ?? pubkey.toBase58(),
+              companyId:
+                data.companyId?.toString() ??
+                data.company_id?.toString() ??
+                data.company?.toBase58(),
               price: data.price.toString(),
               stock: data.stock.toNumber(),
+              description: 'Premium quality guaranteed at Solana E-Shop',
+              image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800',
               active: true,
             };
           } catch (e) {
@@ -245,16 +280,28 @@ export function useContract(
         // --- Escritura (Requiere Wallet) ---
         registerCompany: async (name: string, description: string) => {
           if (isReadOnly) throw new Error('Wallet not connected');
-          const [pda] = PublicKey.findProgramAddressSync(
-            [Buffer.from('company'), signer.publicKey.toBuffer()],
+          const [globalStatePda] = PublicKey.findProgramAddressSync(
+            [Buffer.from('global-state')],
             program.programId
           );
 
-          const tx = await (program.methods.registerCompany || (program.methods as any).register_company)(
-            name,
-            description
-          )
+          const globalStateAccount =
+            (program.account as any).globalState || (program.account as any).GlobalState;
+          if (!globalStateAccount) throw new Error('Account "globalState" not found in program');
+          const globalStateRaw: any = await globalStateAccount.fetch(globalStatePda);
+
+          const [pda] = PublicKey.findProgramAddressSync(
+            [Buffer.from('company'), globalStateRaw.nextCompanyId.toArrayLike(Buffer, 'le', 8)],
+            program.programId
+          );
+
+          const method = program.methods.registerCompany
+            ? program.methods.registerCompany(name, description)
+            : (program.methods as any).register_company(name, description);
+
+          const tx = await method
             .accounts({
+              globalState: globalStatePda,
               company: pda,
               owner: signer.publicKey,
               systemProgram: SystemProgram.programId,
@@ -281,19 +328,31 @@ export function useContract(
           if (isReadOnly) throw new Error('Wallet not connected');
           const companyPubKey =
             typeof companyId === 'string' ? new PublicKey(companyId) : companyId;
-          const [pda] = PublicKey.findProgramAddressSync(
-            [Buffer.from('product'), companyPubKey.toBuffer(), Buffer.from(name)],
+
+          const [globalStatePda] = PublicKey.findProgramAddressSync(
+            [Buffer.from('global-state')],
             program.programId
           );
 
-          const tx = await (program.methods.addProduct || (program.methods as any).add_product)(
-            name,
-            new BN(price),
-            new BN(stock)
-          )
+          const globalStateAccount =
+            (program.account as any).globalState || (program.account as any).GlobalState;
+          if (!globalStateAccount) throw new Error('Account "globalState" not found in program');
+          const globalStateRaw: any = await globalStateAccount.fetch(globalStatePda);
+
+          const [pda] = PublicKey.findProgramAddressSync(
+            [Buffer.from('product'), globalStateRaw.nextProductId.toArrayLike(Buffer, 'le', 8)],
+            program.programId
+          );
+
+          const method = program.methods.addProduct
+            ? program.methods.addProduct(name, new BN(price), new BN(stock))
+            : (program.methods as any).add_product(name, new BN(price), new BN(stock));
+
+          const tx = await method
             .accounts({
-              product: pda,
+              globalState: globalStatePda,
               company: companyPubKey,
+              product: pda,
               owner: signer.publicKey,
               systemProgram: SystemProgram.programId,
             } as any)
@@ -323,19 +382,24 @@ export function useContract(
             if (!account) throw new Error('Account "invoice" not found in program');
 
             const coder = program.coder.accounts;
-            const discriminator = (account as any).discriminator || Buffer.from([51, 194, 250, 114, 6, 104, 18, 164]);
-            
+            const discriminator =
+              (account as any).discriminator || Buffer.from([51, 194, 250, 114, 6, 104, 18, 164]);
+
             const rawAccounts = await provider.getProgramAccounts(program.programId, {
-              filters: [{ memcmp: { offset: 0, bytes: bs58.encode(discriminator) } }]
+              filters: [{ memcmp: { offset: 0, bytes: bs58.encode(discriminator) } }],
             });
 
             const invoices: any[] = [];
             for (const { pubkey, account: accountInfo } of rawAccounts) {
               try {
-                const decoded = coder.decode('invoice', accountInfo.data) || coder.decode('Invoice', accountInfo.data);
+                const decoded =
+                  coder.decode('invoice', accountInfo.data) ||
+                  coder.decode('Invoice', accountInfo.data);
                 invoices.push({ publicKey: pubkey, account: decoded });
               } catch (e: any) {
-                console.warn(`[useContract] Saltando factura legacy ${pubkey.toBase58()}: ${e.message}`);
+                console.warn(
+                  `[useContract] Saltando factura legacy ${pubkey.toBase58()}: ${e.message}`
+                );
               }
             }
 
