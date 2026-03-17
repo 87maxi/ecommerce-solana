@@ -32,10 +32,16 @@ export default function ProductsPage() {
 
 function ProductsPageContent() {
   const { connection } = useConnection();
-  const { publicKey } = useWallet();
+  const { publicKey, signTransaction, signAllTransactions } = useWallet();
   const { roleInfo, isLoading: roleLoading } = useRole();
 
-  const signer = useMemo(() => (publicKey ? { publicKey } : null), [publicKey]);
+  const signer = useMemo(
+    () =>
+      publicKey && signTransaction && signAllTransactions
+        ? { publicKey, signTransaction, signAllTransactions }
+        : null,
+    [publicKey, signTransaction, signAllTransactions]
+  );
   const ecommerceContract = useContract('Ecommerce', connection, signer, null);
 
   console.log('[ProductsPage] Depuración:', {

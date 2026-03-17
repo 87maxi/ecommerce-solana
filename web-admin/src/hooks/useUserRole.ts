@@ -20,9 +20,15 @@ export type UserRoleInfo = {
 };
 
 export function useUserRole(): UserRoleInfo {
-  const { publicKey } = useWallet();
+  const { publicKey, signTransaction, signAllTransactions } = useWallet();
   const { connection } = useConnection();
-  const signer = useMemo(() => (publicKey ? { publicKey } : null), [publicKey]);
+  const signer = useMemo(
+    () =>
+      publicKey && signTransaction && signAllTransactions
+        ? { publicKey, signTransaction, signAllTransactions }
+        : null,
+    [publicKey, signTransaction, signAllTransactions]
+  );
 
   // Pass null for chainId as it's not used in the Solana refactor
   const ecommerceContract = useContract('Ecommerce', connection, signer, null);

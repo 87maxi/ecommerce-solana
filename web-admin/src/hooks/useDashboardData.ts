@@ -19,11 +19,17 @@ type DashboardData = {
  * If ownerAddress is provided, counts will only include entities related to that owner.
  */
 export function useDashboardData(ownerAddress?: string) {
-  const { publicKey } = useWallet();
+  const { publicKey, signTransaction, signAllTransactions } = useWallet();
   const { connection } = useConnection();
 
   // Memoize signer to avoid unnecessary re-renders
-  const signer = useMemo(() => (publicKey ? { publicKey } : null), [publicKey?.toBase58()]);
+  const signer = useMemo(
+    () =>
+      publicKey && signTransaction && signAllTransactions
+        ? { publicKey, signTransaction, signAllTransactions }
+        : null,
+    [publicKey, signTransaction, signAllTransactions]
+  );
 
   // Initialize ecommerce contract
   const ecommerceContract = useContract('Ecommerce', connection, signer, null);

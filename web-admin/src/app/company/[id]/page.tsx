@@ -24,9 +24,15 @@ import { formatAddress } from '../../../lib/utils';
 
 function CompanyDetailContent() {
   const params = useParams();
-  const { publicKey } = useWallet();
+  const { publicKey, signTransaction, signAllTransactions } = useWallet();
   const { connection } = useConnection();
-  const signer = useMemo(() => (publicKey ? { publicKey } : null), [publicKey]);
+  const signer = useMemo(
+    () =>
+      publicKey && signTransaction && signAllTransactions
+        ? { publicKey, signTransaction, signAllTransactions }
+        : null,
+    [publicKey, signTransaction, signAllTransactions]
+  );
   const ecommerceContract = useContract('Ecommerce', connection, signer, null);
 
   const companyId = params?.id ? (Array.isArray(params.id) ? params.id[0] : params.id) : null;

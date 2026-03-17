@@ -31,9 +31,15 @@ export default function CompaniesPage() {
 }
 
 function CompaniesPageContent() {
-  const { publicKey } = useWallet();
+  const { publicKey, signTransaction, signAllTransactions } = useWallet();
   const { connection } = useConnection();
-  const signer = useMemo(() => (publicKey ? { publicKey } : null), [publicKey]);
+  const signer = useMemo(
+    () =>
+      publicKey && signTransaction && signAllTransactions
+        ? { publicKey, signTransaction, signAllTransactions }
+        : null,
+    [publicKey, signTransaction, signAllTransactions]
+  );
   const ecommerceContract = useContract('Ecommerce', connection, signer, null);
 
   console.log('[CompaniesPage] Wallet conectada:', publicKey?.toBase58());
