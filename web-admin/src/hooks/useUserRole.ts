@@ -9,6 +9,7 @@ export type UserRole =
   | 'company_owner'
   | 'customer'
   | 'unregistered'
+  | 'disconnected'
   | 'loading'
   | 'error';
 
@@ -59,7 +60,7 @@ export function useUserRole(): UserRoleInfo {
     if (!address || !ecommerceContract) {
       if (isMounted) {
         if (!address) {
-          safeSetRoleInfo({ role: 'loading' });
+          safeSetRoleInfo({ role: 'disconnected' });
         } else {
           safeSetRoleInfo({ role: 'error', error: 'Contrato no disponible' });
         }
