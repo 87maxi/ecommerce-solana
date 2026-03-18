@@ -7,9 +7,6 @@ import {
 } from "@solana/wallet-adapter-react";
 import { WalletAdapterNetwork, WalletError } from "@solana/wallet-adapter-base";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
-import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
-import { BackpackWalletAdapter } from "@solana/wallet-adapter-backpack";
-import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
 import { clusterApiUrl } from "@solana/web3.js";
 
 // Los estilos de la wallet se importan en src/app/layout.tsx para evitar errores de hidratación.
@@ -27,14 +24,9 @@ export function AppWalletProvider({ children }: { children: React.ReactNode }) {
     );
   }, [network]);
 
-  const wallets = useMemo(
-    () => [
-      new PhantomWalletAdapter(),
-      new BackpackWalletAdapter(),
-      new SolflareWalletAdapter(),
-    ],
-    [], // Las wallets no dependen de ninguna variable reactiva externa
-  );
+  // Usamos un array vacío ya que las billeteras modernas de Solana (Phantom, Solflare, Backpack)
+  // son detectadas automáticamente a través del estándar de billeteras de Solana.
+  const wallets = useMemo(() => [], []);
 
   const onError = useCallback((error: WalletError) => {
     // Maneja errores de la wallet de forma segura, como rechazos o fallos de conexión.

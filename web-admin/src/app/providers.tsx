@@ -4,9 +4,6 @@ import React, { useMemo } from 'react';
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
-import { BackpackWalletAdapter } from '@solana/wallet-adapter-backpack';
-import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
 import { clusterApiUrl } from '@solana/web3.js';
 
 // Los estilos se han movido a layout.tsx para evitar problemas de renderizado
@@ -28,12 +25,10 @@ export function AppWalletProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
-  // Inicialización de adaptadores de billetera específicos
-  const wallets = useMemo(
-    () => [new PhantomWalletAdapter(), new BackpackWalletAdapter(), new SolflareWalletAdapter()],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [network]
-  );
+  // Usamos un array vacío ya que la mayoría de wallets modernas (Phantom, Backpack, Solflare)
+  // implementan el 'Solana Wallet Standard' y son detectadas automáticamente.
+  // Esto evita errores de duplicidad de llaves (como el de MetaMask) en el modal.
+  const wallets = useMemo(() => [], []);
 
   return (
     <ConnectionProvider endpoint={endpoint}>
