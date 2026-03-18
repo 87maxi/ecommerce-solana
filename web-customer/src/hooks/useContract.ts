@@ -29,7 +29,6 @@ export function useContract() {
   const [program, setProgram] = useState<Program | null>(null);
   const [account, setAccount] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const initializationAttempted = useRef(false);
 
   // Stable signer object for AnchorProvider
   const signer = useMemo(
@@ -44,17 +43,26 @@ export function useContract() {
   useEffect(() => {
     let isMounted = true;
 
-    if (isInitialized || !connection || initializationAttempted.current) {
+    if (!connection) {
       return;
     }
 
     const initProgram = async () => {
-      initializationAttempted.current = true;
-      try {
-        console.log("[useContract] Initializing Anchor program...");
+      // Check if we already have a program initialized with the current wallet to avoid race conditions
+      const targetPubKey = walletAddress || "11111111111111111111111111111111";
+      if (
+        isInitialized &&
+        program &&
+        program.provider.publicKey?.toBase58() === targetPubKey
+      ) {
+        return;
+      }
 
-        // We use a fallback provider with a dummy signer if the wallet is not connected.
-        // This allows fetching products (read-only) without a wallet immediately.
+      try {
+        console.log(
+          `[useContract] Initializing Anchor program for ${walletAddress || "public access"}...`,
+        );
+
         const providerSigner = signer || {
           publicKey: new PublicKey("11111111111111111111111111111111"),
           signTransaction: async (tx: any) => tx,
@@ -94,30 +102,16 @@ export function useContract() {
     return () => {
       isMounted = false;
     };
-  }, [connection, walletAddress, signer, isInitialized]);
-
-  // Reset state only if wallet address genuinely changes
-  // Reset state only if wallet address genuinely changes
-  // We keep the current program instance to avoid flickering until the new one is ready
-  const prevAddressRef = useRef(walletAddress);
-  useEffect(() => {
-    if (walletAddress !== prevAddressRef.current) {
-      initializationAttempted.current = false;
-      setIsInitialized(false);
-      // Only nullify program if we're switching between different accounts
-      if (
-        walletAddress &&
-        prevAddressRef.current &&
-        walletAddress !== prevAddressRef.current
-      ) {
-        setProgram(null);
-      }
-      prevAddressRef.current = walletAddress;
-    }
-  }, [walletAddress]);
+  }, [connection, walletAddress, signer]);
 
   const checkAndRegisterCustomer = useCallback(async (): Promise<boolean> => {
     if (!program || !publicKey) return false;
+
+    // Safety check: ensure program is using the current wallet
+    if (program.provider.publicKey?.toBase58() !== publicKey.toBase58()) {
+      return false;
+    }
+
     try {
       const [customerPda] = PublicKey.findProgramAddressSync(
         [Buffer.from("customer"), publicKey.toBuffer()],
@@ -213,13 +207,15 @@ export function useContract() {
           (p.account as any).companyId?.toString() ??
           "Unknown",
         name: p.account.name,
-        // Description, image, and is_active were removed from the on-chain program to save space
-        description: "Premium quality guaranteed at Solana E-Shop",
+        description:
+          p.account.description ||
+          "Premium quality guaranteed at Solana E-Shop",
         price: (Number(p.account.price) / 1000000).toFixed(2),
         stock: Number(p.account.stock),
         image:
+          p.account.image ||
           "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800",
-        active: true,
+        active: p.account.is_active ?? p.account.isActive ?? true,
       }));
 
       console.log(
@@ -263,6 +259,15 @@ export function useContract() {
   const addToCart = useCallback(
     async (productId: string, quantity: number) => {
       if (!program || !publicKey) return false;
+
+      // Safety check: ensure program is using the current wallet
+      if (program.provider.publicKey?.toBase58() !== publicKey.toBase58()) {
+        console.warn(
+          "[useContract] Program provider mismatch, waiting for sync...",
+        );
+        return false;
+      }
+
       try {
         const [cartPda] = PublicKey.findProgramAddressSync(
           [Buffer.from("shopping-cart"), publicKey.toBuffer()],
