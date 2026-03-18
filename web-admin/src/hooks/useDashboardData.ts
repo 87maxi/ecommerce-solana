@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { useContract } from './useContract';
+import { useState, useEffect } from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { useGlobalContract } from '../contexts/ContractContext';
 
 // Define types for our dashboard data
 type DashboardData = {
@@ -18,20 +18,8 @@ type DashboardData = {
  * If ownerAddress is provided, counts and lists will only include entities related to that owner's companies.
  */
 export function useDashboardData(ownerAddress?: string) {
-  const { publicKey, signTransaction, signAllTransactions } = useWallet();
-  const { connection } = useConnection();
-
-  // Memoize signer to avoid unnecessary re-renders
-  const signer = useMemo(
-    () =>
-      publicKey && signTransaction && signAllTransactions
-        ? { publicKey, signTransaction, signAllTransactions }
-        : null,
-    [publicKey, signTransaction, signAllTransactions]
-  );
-
-  // Initialize ecommerce contract
-  const ecommerceContract = useContract('Ecommerce', connection, signer, null);
+  const { publicKey } = useWallet();
+  const { ecommerceContract } = useGlobalContract();
 
   const [data, setData] = useState<DashboardData>({
     companyCount: 0,

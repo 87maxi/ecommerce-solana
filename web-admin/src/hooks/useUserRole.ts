@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { useContract } from './useContract';
+import { useState, useEffect } from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { useGlobalContract } from '../contexts/ContractContext';
 
 export type UserRole =
   | 'admin'
@@ -22,18 +22,8 @@ export type UserRoleInfo = {
 };
 
 export function useUserRole(): UserRoleInfo {
-  const { publicKey, signTransaction, signAllTransactions } = useWallet();
-  const { connection } = useConnection();
-  const signer = useMemo(
-    () =>
-      publicKey && signTransaction && signAllTransactions
-        ? { publicKey, signTransaction, signAllTransactions }
-        : null,
-    [publicKey, signTransaction, signAllTransactions]
-  );
-
-  // Pass null for chainId as it's not used in the Solana refactor
-  const ecommerceContract = useContract('Ecommerce', connection, signer, null);
+  const { publicKey } = useWallet();
+  const { ecommerceContract } = useGlobalContract();
 
   const [roleInfo, setRoleInfo] = useState<UserRoleInfo>({ role: 'loading' });
 
