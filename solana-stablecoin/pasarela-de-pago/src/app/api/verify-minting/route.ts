@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { orders } from "@/lib/orderStorage"; // We'll keep this for a fallback, but prioritize Stripe API
+import { mintTokens } from "@/lib/contracts";
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY!);
 
@@ -58,15 +59,75 @@ export async function GET(request: NextRequest) {
             { headers: corsHeaders },
           );
         } else {
-          // Payment succeeded but minting might be delayed (webhook processing)
-          console.log(
-            "[VERIFY-MINTING] Payment succeeded, but minting not yet completed in storage. Status:",
-            order?.status,
+          // SELF-HEALING LOGIC: Payment succeeded in Stripe but minting hasn't been recorded.
+          // This usually happens if the webhook failed or was delayed.
+          console.warn(
+            `[VERIFY-MINTING] Payment succeeded for ${paymentIntentId}, but minting not found in storage. Triggering manual minting...`,
           );
-          return NextResponse.json(
-            { success: false, status: "processing" },
-            { headers: corsHeaders },
-          );
+
+          const { walletAddress, invoice } = paymentIntent.metadata;
+          const amount = paymentIntent.amount / 100;
+
+          if (!walletAddress) {
+            console.error("[VERIFY-MINTING] Missing walletAddress in metadata");
+            return NextResponse.json(
+              { success: false, error: "Missing metadata for minting" },
+              { status: 500, headers: corsHeaders },
+            );
+          }
+
+          try {
+            // Trigger minting immediately
+            const mintResult = await mintTokens(
+              walletAddress,
+              amount,
+              invoice || "Manual-Verification",
+            );
+            console.log(
+              `[VERIFY-MINTING] Manual minting successful: ${mintResult.transactionHash}`,
+            );
+
+            // Update local storage so subsequent calls find it
+            const completedOrder = {
+              orderId: paymentIntentId,
+              buyerAddress: walletAddress,
+              tokenAmount: amount,
+              invoice: invoice || "Manual-Verification",
+              status: "completed" as const,
+              txHash: mintResult.transactionHash,
+              createdAt: order?.createdAt || new Date(),
+              completedAt: new Date(),
+              expiresAt:
+                order?.expiresAt || new Date(Date.now() + 5 * 60 * 1000),
+            };
+            orders.set(paymentIntentId, completedOrder);
+
+            return NextResponse.json(
+              {
+                success: true,
+                status: "completed",
+                txHash: mintResult.transactionHash,
+                amount: amount,
+                walletAddress: walletAddress,
+                invoice: invoice,
+                note: "Minting triggered by verification (webhook fallback)",
+              },
+              { headers: corsHeaders },
+            );
+          } catch (mintError: any) {
+            console.error(
+              "[VERIFY-MINTING] Failed to trigger manual minting:",
+              mintError,
+            );
+            return NextResponse.json(
+              {
+                success: false,
+                status: "failed_minting",
+                error: mintError.message,
+              },
+              { status: 500, headers: corsHeaders },
+            );
+          }
         }
       } else {
         // Payment has not succeeded yet
