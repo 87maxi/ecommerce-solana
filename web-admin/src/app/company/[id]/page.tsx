@@ -16,6 +16,8 @@ import {
   ClipboardCopy,
   Users,
   ExternalLink,
+  Download,
+  FileText,
 } from 'lucide-react';
 
 import { useContract } from '../../../hooks/useContract';
@@ -41,6 +43,7 @@ function CompanyDetailContent() {
 
   const [company, setCompany] = useState<Company | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [companyCustomers, setCompanyCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -81,12 +84,16 @@ function CompanyDetailContent() {
       const companyNumericId = (companyData as any).numericId;
 
       const validProducts = allProducts.filter(
-        (p: any) => p != null && p.companyId === companyNumericId
+        (p: any) => p != null && p.companyId?.toString() === companyNumericId?.toString()
       );
       setProducts(validProducts);
 
       // Process customers from invoices for this company using numericId
-      const companyInvoices = allInvoices.filter((inv: any) => inv.companyId === companyNumericId);
+      const companyInvoices = allInvoices.filter(
+        (inv: any) => inv.companyId?.toString() === companyNumericId?.toString()
+      );
+      setInvoices(companyInvoices.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
+
       const customerMap = new Map<string, any>();
 
       companyInvoices.forEach((inv: any) => {
@@ -127,6 +134,44 @@ function CompanyDetailContent() {
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
     setIsProductModalOpen(true);
+  };
+
+  const handleSaveProduct = async (productData: any) => {
+    if (!ecommerceContract || !companyId) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      if (editingProduct) {
+        // Actualizar producto existente
+        const tx = await ecommerceContract.updateProduct(
+          editingProduct.id,
+          companyId,
+          productData.name,
+          productData.description,
+          productData.price,
+          productData.stock
+        );
+        await tx.wait();
+      } else {
+        // Añadir nuevo producto
+        const tx = await ecommerceContract.addProduct(
+          companyId,
+          productData.name,
+          productData.description,
+          productData.price,
+          productData.stock
+        );
+        await tx.wait();
+      }
+      await loadData();
+    } catch (err: any) {
+      console.error('Error saving product:', err);
+      setError(err.message || 'Error al guardar el producto');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const copyToClipboard = (text: string, type: string) => {
@@ -294,17 +339,17 @@ function CompanyDetailContent() {
         {/* Customers Column */}
         <div className="space-y-6">
           <h2 className="text-2xl font-bold text-white mb-4">
-            Company Customers ({companyCustomers.length})
+            Clientes de la Empresa ({companyCustomers.length})
           </h2>
           {companyCustomers.length === 0 ? (
             <div className="text-center py-16 bg-slate-800/30 rounded-3xl border-dashed border-2 border-slate-700">
               <Users className="w-12 h-12 mx-auto text-slate-600 mb-4" />
               <p className="text-slate-500 font-medium">
-                No customers have purchased from this company yet.
+                No hay clientes registrados para esta empresa todavía.
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4">
               {companyCustomers.map(cust => (
                 <div
                   key={cust.address}
@@ -316,8 +361,8 @@ function CompanyDetailContent() {
                     </div>
                     <div>
                       <p className="font-mono text-sm text-white">{formatAddress(cust.address)}</p>
-                      <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
-                        {cust.purchaseCount} purchases · {cust.totalSpent.toFixed(2)} EURT total
+                      <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">
+                        {cust.purchaseCount} compras · {cust.totalSpent.toFixed(2)} EURT total
                       </p>
                     </div>
                   </div>
@@ -334,11 +379,63 @@ function CompanyDetailContent() {
         </div>
       </div>
 
+      {/* Invoices Section */}
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold text-white mb-4">Ventas Recientes ({invoices.length})</h2>
+        {invoices.length === 0 ? (
+          <div className="text-center py-16 bg-slate-800/30 rounded-3xl border-dashed border-2 border-slate-700">
+            <FileText className="w-12 h-12 mx-auto text-slate-600 mb-4" />
+            <p className="text-slate-500 font-medium">
+              No hay facturas generadas para esta empresa.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {invoices.slice(0, 6).map(invoice => (
+              <div
+                key={invoice.id}
+                className="bg-slate-800/40 p-5 rounded-2xl border border-slate-700/50 flex flex-col gap-4 hover:border-cyan-500/30 transition-all"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-bold text-white text-sm">
+                      Factura #{invoice.id.slice(0, 8)}
+                    </h3>
+                    <p className="text-[10px] text-slate-500 font-mono mt-1">
+                      {formatAddress(invoice.customerAddress)}
+                    </p>
+                  </div>
+                  <span className="font-black text-cyan-400 text-sm">
+                    {invoice.totalAmount} EURT
+                  </span>
+                </div>
+                <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold">
+                    {invoice.timestamp.toLocaleDateString()}
+                  </span>
+                  {invoice.ipfsCid && (
+                    <a
+                      href={`http://localhost:8080/ipfs/${invoice.ipfsCid}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-[10px] font-bold text-cyan-400 hover:underline"
+                    >
+                      <Download className="w-3 h-3" />
+                      PDF KUBO
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {isProductModalOpen && (
         <ProductModal
           isOpen={isProductModalOpen}
           onClose={() => setIsProductModalOpen(false)}
-          onSave={loadData}
+          onSave={handleSaveProduct}
           product={editingProduct || undefined}
           companyId={company.id}
         />

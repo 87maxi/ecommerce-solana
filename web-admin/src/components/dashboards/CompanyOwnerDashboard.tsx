@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useRole } from '@/contexts/RoleContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useContract } from '@/hooks/useContract';
@@ -26,6 +27,7 @@ type CompanyOwnerDashboardProps = {
 };
 
 export function CompanyOwnerDashboard({ companyId, companyName }: CompanyOwnerDashboardProps) {
+  const { roleInfo } = useRole();
   const { publicKey, signTransaction, signAllTransactions } = useWallet();
   const { connection } = useConnection();
   const {
@@ -48,20 +50,13 @@ export function CompanyOwnerDashboard({ companyId, companyName }: CompanyOwnerDa
 
   useEffect(() => {
     async function loadRecentProducts() {
-      if (!ecommerceContract || !publicKey) return;
+      if (!ecommerceContract || !publicKey || !roleInfo.companyNumericId) return;
       setProductsLoading(true);
       try {
-        const [allProducts, allCompanies] = await Promise.all([
-          ecommerceContract.getAllProducts(),
-          ecommerceContract.getAllCompanies(),
-        ]);
-
-        const myCompanyIds = allCompanies
-          .filter((c: any) => c.owner.toLowerCase() === publicKey.toBase58().toLowerCase())
-          .map((c: any) => c.id.toString());
+        const allProducts = await ecommerceContract.getAllProducts();
 
         const filtered = allProducts
-          .filter((p: any) => myCompanyIds.includes(p.companyId.toString()))
+          .filter((p: any) => p.companyId === roleInfo.companyNumericId)
           .slice(0, 4);
 
         setRecentProducts(filtered);
@@ -72,7 +67,7 @@ export function CompanyOwnerDashboard({ companyId, companyName }: CompanyOwnerDa
       }
     }
     loadRecentProducts();
-  }, [ecommerceContract, publicKey?.toBase58()]);
+  }, [ecommerceContract, publicKey?.toBase58(), roleInfo.companyNumericId]);
 
   const stats = [
     {

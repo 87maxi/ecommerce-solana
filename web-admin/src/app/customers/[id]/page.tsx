@@ -6,6 +6,7 @@ import { useConnection } from '@solana/wallet-adapter-react';
 import Link from 'next/link';
 import { Loader2, AlertCircle, ArrowLeft, FileText, ExternalLink } from 'lucide-react';
 import { useContract } from '../../../hooks/useContract';
+import { useRole } from '../../../contexts/RoleContext';
 import { RoleGuard } from '../../../components/RoleGuard';
 import { formatAddress } from '../../../lib/utils';
 import { getIPFSUrl } from '../../../lib/ipfs-local';
@@ -16,6 +17,7 @@ function CustomerDetailPageContent() {
   const customerAddress = params?.id ? (Array.isArray(params.id) ? params.id[0] : params.id) : null;
 
   const { connection } = useConnection();
+  const { roleInfo } = useRole();
   const ecommerceContract = useContract('Ecommerce', connection, null, null);
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -28,7 +30,15 @@ function CustomerDetailPageContent() {
     setLoading(true);
     setError(null);
     try {
-      const invoiceData = await ecommerceContract.getCustomerInvoices(customerAddress);
+      let invoiceData = await ecommerceContract.getCustomerInvoices(customerAddress);
+
+      // Si es dueño de empresa, filtrar para ver solo sus facturas
+      if (roleInfo.role === 'company_owner' && roleInfo.companyNumericId) {
+        invoiceData = invoiceData.filter(
+          (inv: any) => inv.companyId?.toString() === roleInfo.companyNumericId?.toString()
+        );
+      }
+
       setInvoices(
         invoiceData.sort((a: Invoice, b: Invoice) => b.timestamp.getTime() - a.timestamp.getTime())
       );
@@ -37,7 +47,7 @@ function CustomerDetailPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [ecommerceContract, customerAddress]);
+  }, [ecommerceContract, customerAddress, roleInfo]);
 
   useEffect(() => {
     loadInvoiceData();
@@ -114,7 +124,7 @@ function CustomerDetailPageContent() {
 
 export default function CustomerDetailPage() {
   return (
-    <RoleGuard allowedRoles={['admin']}>
+    <RoleGuard allowedRoles={['admin', 'company_owner']}>
       <CustomerDetailPageContent />
     </RoleGuard>
   );

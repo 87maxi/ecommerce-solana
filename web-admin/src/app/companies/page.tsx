@@ -11,6 +11,8 @@ import {
   Search,
   ArrowRight,
   ExternalLink,
+  X,
+  Edit,
 } from 'lucide-react';
 import { useContract } from '../../hooks/useContract';
 import { formatAddress, formatDate } from '../../lib/utils';
@@ -51,6 +53,7 @@ function CompaniesPageContent() {
   const [formData, setFormData] = useState<CompanyFormData>({ name: '', description: '' });
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
 
   const loadCompanies = useCallback(async () => {
     if (!ecommerceContract) return;
@@ -87,21 +90,35 @@ function CompaniesPageContent() {
       return;
     }
     if (!ecommerceContract || ecommerceContract.isReadOnly) {
-      setError('Conecta tu wallet para registrar una empresa.');
+      setError('Conecta tu wallet para realizar esta acción.');
       return;
     }
 
     setSubmitting(true);
     setError(null);
     try {
-      const tx = await ecommerceContract.registerCompany(formData.name, formData.description);
-      await tx.wait();
+      if (editingCompany) {
+        // Actualizar empresa existente
+        const tx = await ecommerceContract.updateCompany(
+          editingCompany.id,
+          formData.name,
+          formData.description
+        );
+        await tx.wait();
+      } else {
+        // Registrar nueva empresa
+        const tx = await ecommerceContract.registerCompany(formData.name, formData.description);
+        await tx.wait();
+      }
 
       setFormData({ name: '', description: '' });
+      setEditingCompany(null);
       setShowForm(false);
       await loadCompanies(); // Refresh list
     } catch (err: any) {
-      setError(err.message || 'Fallo al registrar la empresa.');
+      setError(
+        err.message || `Fallo al ${editingCompany ? 'actualizar' : 'registrar'} la empresa.`
+      );
     } finally {
       setSubmitting(false);
     }
@@ -118,11 +135,19 @@ function CompaniesPageContent() {
           </p>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            if (showForm) {
+              setShowForm(false);
+              setEditingCompany(null);
+              setFormData({ name: '', description: '' });
+            } else {
+              setShowForm(true);
+            }
+          }}
           className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-cyan-500/20 transition-all transform hover:-translate-y-1 active:scale-95"
         >
-          <Plus className="w-5 h-5" />
-          <span>{showForm ? 'Ocultar Formulario' : 'Registrar Empresa'}</span>
+          {showForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+          <span>{showForm ? 'Cancelar' : 'Registrar Empresa'}</span>
         </button>
       </div>
 
@@ -130,7 +155,9 @@ function CompaniesPageContent() {
       {showForm && (
         <div className="bg-slate-800/40 p-8 rounded-3xl border border-slate-700/50 backdrop-blur-sm animate-in fade-in zoom-in-95 duration-300">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <h3 className="text-xl font-bold text-white mb-6">Nueva Empresa</h3>
+            <h3 className="text-xl font-bold text-white mb-6">
+              {editingCompany ? `Editando: ${editingCompany.name}` : 'Nueva Empresa'}
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 ml-1">
@@ -169,7 +196,13 @@ function CompaniesPageContent() {
                 disabled={submitting}
                 className="px-8 py-3 rounded-xl text-sm font-black uppercase tracking-widest text-white bg-cyan-600 hover:bg-cyan-500 shadow-lg shadow-cyan-900/20 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed group"
               >
-                {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirmar Registro'}
+                {submitting ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : editingCompany ? (
+                  'Guardar Cambios'
+                ) : (
+                  'Confirmar Registro'
+                )}
               </button>
             </div>
           </form>
@@ -221,13 +254,32 @@ function CompaniesPageContent() {
                   <span>Propietario</span>
                   <span className="text-slate-300 font-mono">{formatAddress(company.owner)}</span>
                 </div>
-                <Link
-                  href={`/company/${company.id}`}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-700/50 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-600/50 transition-all"
-                >
-                  Gestionar Empresa
-                  <ExternalLink className="w-4 h-4" />
-                </Link>
+                <div className="flex gap-2">
+                  {publicKey &&
+                    company.owner.toLowerCase() === publicKey.toBase58().toLowerCase() && (
+                      <button
+                        onClick={() => {
+                          setEditingCompany(company);
+                          setFormData({ name: company.name, description: company.description });
+                          setShowForm(true);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="p-2.5 bg-slate-700/50 hover:bg-slate-700 text-slate-200 rounded-xl border border-slate-600/50 transition-all"
+                        title="Editar Empresa"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                    )}
+                  <Link
+                    href={`/company/${company.id}`}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 text-xs font-bold rounded-xl border border-cyan-500/20 transition-all"
+                  >
+                    {publicKey && company.owner.toLowerCase() === publicKey.toBase58().toLowerCase()
+                      ? 'Gestionar'
+                      : 'Ver Detalles'}
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                </div>
               </div>
             </div>
           ))}

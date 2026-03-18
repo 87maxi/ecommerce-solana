@@ -49,6 +49,7 @@ function ProductsPageContent() {
     contractReady: !!ecommerceContract,
     role: roleInfo.role,
     companyId: roleInfo.companyId,
+    companyNumericId: roleInfo.companyNumericId,
   });
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -78,8 +79,8 @@ function ProductsPageContent() {
           // Relajamos el filtro para asegurar que los datos cargados se visualicen
           if (roleInfo.role === 'admin' || roleInfo.role === 'loading' || !roleInfo.role) {
             return true;
-          } else if (roleInfo.role === 'company_owner' && roleInfo.companyId) {
-            return product.companyId === roleInfo.companyId;
+          } else if (roleInfo.role === 'company_owner' && roleInfo.companyNumericId) {
+            return product.companyId === roleInfo.companyNumericId;
           }
           return true; // Fallback para depuración
         })
@@ -128,9 +129,68 @@ function ProductsPageContent() {
     setIsModalOpen(true);
   };
 
+  const handleToggleStatus = async (productId: any) => {
+    if (!ecommerceContract) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('[ProductsPage] Cambiando estado del producto:', productId);
+
+      const tx = await ecommerceContract.toggleProductStatus(productId);
+      await tx.wait();
+      await loadProducts();
+    } catch (err: any) {
+      console.error('Error toggling product status:', err);
+      setError(err.message || 'Error al cambiar el estado del producto');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDeleteProduct = async (id: string) => {
     if (!window.confirm('¿Estás seguro de que deseas eliminar este producto?')) return;
-    alert('Funcionalidad de eliminación pendiente de implementación en contrato');
+    alert(
+      'Funcionalidad de eliminación pendiente de implementación en contrato. Usa "Editar" para desactivarlo.'
+    );
+  };
+
+  const handleSaveProduct = async (productData: any) => {
+    if (!ecommerceContract) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      if (editingProduct) {
+        // Actualizar producto existente
+        const tx = await ecommerceContract.updateProduct(
+          editingProduct.id,
+          editingProduct.companyId,
+          productData.name,
+          productData.description,
+          productData.price,
+          productData.stock
+        );
+        await tx.wait();
+      } else {
+        // Añadir nuevo producto
+        const tx = await ecommerceContract.addProduct(
+          productData.companyId,
+          productData.name,
+          productData.description,
+          productData.price,
+          productData.stock
+        );
+        await tx.wait();
+      }
+      await loadProducts();
+    } catch (err: any) {
+      console.error('Error saving product:', err);
+      setError(err.message || 'Error al guardar el producto');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredProducts = products.filter(
@@ -298,10 +358,19 @@ function ProductsPageContent() {
                       Editar
                     </button>
                     <button
-                      onClick={() => handleDeleteProduct(product.id)}
-                      className="p-2.5 text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 rounded-xl border border-rose-500/20 transition-all"
+                      onClick={() => handleToggleStatus(product.id)}
+                      className={`p-2.5 rounded-xl border transition-all ${
+                        product.isActive
+                          ? 'text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/20'
+                          : 'text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20'
+                      }`}
+                      title={product.isActive ? 'Desactivar' : 'Activar'}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      {product.isActive ? (
+                        <Trash2 className="w-4 h-4" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -315,8 +384,9 @@ function ProductsPageContent() {
         <ProductModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          onSave={loadProducts}
+          onSave={handleSaveProduct}
           product={editingProduct || undefined}
+          companyId={roleInfo.companyNumericId}
         />
       )}
     </div>
