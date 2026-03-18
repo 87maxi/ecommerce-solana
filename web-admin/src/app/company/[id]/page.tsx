@@ -43,7 +43,7 @@ function CompanyDetailContent() {
 
   const [company, setCompany] = useState<Company | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
   const [companyCustomers, setCompanyCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,7 +92,9 @@ function CompanyDetailContent() {
       const companyInvoices = allInvoices.filter(
         (inv: any) => inv.companyId?.toString() === companyNumericId?.toString()
       );
-      setInvoices(companyInvoices.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
+      setInvoices(
+        companyInvoices.sort((a: any, b: any) => b.timestamp.getTime() - a.timestamp.getTime())
+      );
 
       const customerMap = new Map<string, any>();
 
