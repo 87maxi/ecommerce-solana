@@ -137,7 +137,7 @@ function SuccessPageContent() {
             amount: data.amount || storedAmount,
             invoice: data.invoice || storedInvoice,
             wallet: data.walletAddress || storedWallet,
-            txHash: data.transactionHash,
+            txHash: data.txHash || data.transactionHash,
           });
           const finalWallet = data.walletAddress || storedWallet;
           if (finalWallet) {
