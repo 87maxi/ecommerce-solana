@@ -4,6 +4,7 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 import { RoleAwareNavigation } from '../RoleAwareNavigation';
 import { StatsCard } from '../StatsCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TransactionList } from '../TransactionList';
 
 export function AdminDashboard() {
   const {
@@ -18,12 +19,7 @@ export function AdminDashboard() {
       title: 'Empresas',
       value: dashboardData?.companyCount?.toLocaleString() || '0',
       icon: (
-        <svg
-          className="h-6 w-6 text-white"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
+        <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -38,12 +34,7 @@ export function AdminDashboard() {
       title: 'Productos',
       value: dashboardData?.productCount?.toLocaleString() || '0',
       icon: (
-        <svg
-          className="h-6 w-6 text-white"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
+        <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -58,12 +49,7 @@ export function AdminDashboard() {
       title: 'Clientes',
       value: dashboardData?.customerCount?.toLocaleString() || '0',
       icon: (
-        <svg
-          className="h-6 w-6 text-white"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
+        <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -78,12 +64,7 @@ export function AdminDashboard() {
       title: 'Ventas',
       value: dashboardData?.totalSales?.toLocaleString() || '0',
       icon: (
-        <svg
-          className="h-6 w-6 text-white"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
+        <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -101,7 +82,9 @@ export function AdminDashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">Panel de Administración</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+            Panel de Administración
+          </h1>
           <p className="text-sm sm:text-base text-slate-400 mt-2">
             Gestiona empresas, productos y clientes en el e-commerce descentralizado
           </p>
@@ -138,6 +121,14 @@ export function AdminDashboard() {
                 color={stat.color}
               />
             ))}
+          </div>
+
+          {/* Actividad Global */}
+          <div className="mt-8">
+            <TransactionList
+              transactions={dashboardData?.recentTransactions || []}
+              title="Actividad Global de Ventas"
+            />
           </div>
 
           <RoleAwareNavigation />

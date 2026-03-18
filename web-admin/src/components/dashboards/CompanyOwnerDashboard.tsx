@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { useContract } from '@/hooks/useContract';
 import { RoleAwareNavigation } from '../RoleAwareNavigation';
 import { StatsCard } from '../StatsCard';
 import {
@@ -13,8 +14,11 @@ import {
   Building2,
   PlusCircle,
   ArrowRight,
+  Package,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
+import { TransactionList } from '../TransactionList';
 
 type CompanyOwnerDashboardProps = {
   companyId?: string;
@@ -22,12 +26,53 @@ type CompanyOwnerDashboardProps = {
 };
 
 export function CompanyOwnerDashboard({ companyId, companyName }: CompanyOwnerDashboardProps) {
-  const { publicKey } = useWallet();
+  const { publicKey, signTransaction, signAllTransactions } = useWallet();
+  const { connection } = useConnection();
   const {
     data: dashboardData,
     loading: dashboardLoading,
     error: dashboardError,
   } = useDashboardData(publicKey?.toBase58());
+
+  // Fetch recent products for this owner specifically
+  const signer = useMemo(
+    () =>
+      publicKey && signTransaction && signAllTransactions
+        ? { publicKey, signTransaction, signAllTransactions }
+        : null,
+    [publicKey, signTransaction, signAllTransactions]
+  );
+  const ecommerceContract = useContract('Ecommerce', connection, signer, null);
+  const [recentProducts, setRecentProducts] = useState<any[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+
+  useEffect(() => {
+    async function loadRecentProducts() {
+      if (!ecommerceContract || !publicKey) return;
+      setProductsLoading(true);
+      try {
+        const [allProducts, allCompanies] = await Promise.all([
+          ecommerceContract.getAllProducts(),
+          ecommerceContract.getAllCompanies(),
+        ]);
+
+        const myCompanyIds = allCompanies
+          .filter((c: any) => c.owner.toLowerCase() === publicKey.toBase58().toLowerCase())
+          .map((c: any) => c.id.toString());
+
+        const filtered = allProducts
+          .filter((p: any) => myCompanyIds.includes(p.companyId.toString()))
+          .slice(0, 4);
+
+        setRecentProducts(filtered);
+      } catch (e) {
+        console.error('[CompanyOwnerDashboard] Error loading preview products:', e);
+      } finally {
+        setProductsLoading(false);
+      }
+    }
+    loadRecentProducts();
+  }, [ecommerceContract, publicKey?.toBase58()]);
 
   const stats = [
     {
@@ -197,6 +242,82 @@ export function CompanyOwnerDashboard({ companyId, companyName }: CompanyOwnerDa
                 Ver historial de facturación <ArrowRight className="ml-2 w-4 h-4" />
               </button>
             </div>
+          </div>
+
+          {/* Inventario y Actividad */}
+          <div className="mt-8 grid grid-cols-1 xl:grid-cols-2 gap-8">
+            {/* Vista Previa de Productos */}
+            <div className="bg-slate-800/50 backdrop-blur-sm border border-cyan-500/20 rounded-2xl overflow-hidden shadow-lg">
+              <div className="px-6 py-5 border-b border-cyan-500/20 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
+                  <Package className="w-5 h-5 text-cyan-400" />
+                  Inventario Reciente
+                </h3>
+                <Link
+                  href="/products"
+                  className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors"
+                >
+                  Ver Todo <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
+              <div className="p-0">
+                {productsLoading ? (
+                  <div className="p-12 flex justify-center">
+                    <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+                  </div>
+                ) : recentProducts.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <Package className="w-12 h-12 text-slate-600 mx-auto mb-4 opacity-20" />
+                    <p className="text-slate-500 text-sm font-medium">
+                      No hay productos registrados
+                    </p>
+                    <Link
+                      href="/products"
+                      className="mt-4 inline-block text-xs font-bold text-cyan-400 underline"
+                    >
+                      Añadir Producto
+                    </Link>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-cyan-500/10">
+                    {recentProducts.map(product => (
+                      <li key={product.id} className="p-4 hover:bg-slate-700/30 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-slate-900 border border-white/10 flex items-center justify-center overflow-hidden">
+                              {product.imageHash ? (
+                                <img
+                                  src={product.imageHash}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <Package className="w-5 h-5 text-slate-700" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-slate-200">{product.name}</p>
+                              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                Stock: {product.stock}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-black text-cyan-400">{product.price} EURT</p>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+
+            {/* Listado de Actividad Reciente */}
+            <TransactionList
+              transactions={dashboardData?.recentTransactions || []}
+              title="Ventas Recientes de mis Empresas"
+            />
           </div>
 
           <div className="pt-4">

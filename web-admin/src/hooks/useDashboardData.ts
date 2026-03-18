@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { normalizeArrayResponse } from '../lib/contractUtils';
 import { useContract } from './useContract';
 
 // Define types for our dashboard data
@@ -16,7 +15,7 @@ type DashboardData = {
 
 /**
  * Hook to fetch dashboard data, with optional filtering by owner address.
- * If ownerAddress is provided, counts will only include entities related to that owner.
+ * If ownerAddress is provided, counts and lists will only include entities related to that owner's companies.
  */
 export function useDashboardData(ownerAddress?: string) {
   const { publicKey, signTransaction, signAllTransactions } = useWallet();
@@ -57,67 +56,94 @@ export function useDashboardData(ownerAddress?: string) {
       try {
         if (isMounted) setLoading(true);
         setError(null);
-        console.log('[useDashboardData] Starting data fetch...');
+        console.log('[useDashboardData] Iniciando carga de datos para dashboard...');
 
-        // 1. Fetch Companies
-        const companyIdsResult = await ecommerceContract.getAllCompanies();
-        console.log('[useDashboardData] companyIdsResult:', companyIdsResult);
-        const allCompanyIds = normalizeArrayResponse(companyIdsResult);
+        // 1. Fetch all relevant data categories in parallel for maximum efficiency
+        // Our hook's getAll... methods use getProgramAccounts (batch fetch)
+        const [allCompanies, allProducts, allInvoices] = await Promise.all([
+          ecommerceContract.getAllCompanies(),
+          ecommerceContract.getAllProducts(),
+          ecommerceContract.getAllInvoices(),
+        ]);
 
-        let ownedCompanyIds: string[] = [];
-        let finalCompanyCount = 0;
+        console.log('[useDashboardData] Carga masiva completada:', {
+          totalCompanies: allCompanies.length,
+          totalProducts: allProducts.length,
+          totalInvoices: allInvoices.length,
+        });
 
+        // 2. Filter Companies by Owner
+        let ownedCompanies = allCompanies;
         if (ownerAddress) {
-          // Filter companies owned by this address
-          for (const id of allCompanyIds) {
-            try {
-              const company = await ecommerceContract.getCompany(id);
-              // Compare addresses in lowercase to avoid case sensitivity issues
-              if (company.owner.toString().toLowerCase() === ownerAddress.toLowerCase()) {
-                ownedCompanyIds.push(id.toString());
-              }
-            } catch (e) {
-              console.warn(`Error fetching company ${id}:`, e);
-            }
-          }
-          finalCompanyCount = ownedCompanyIds.length;
-        } else {
-          finalCompanyCount = allCompanyIds.length;
-        }
-        console.log('[useDashboardData] finalCompanyCount:', finalCompanyCount);
-
-        // 2. Fetch Products
-        const productIdsResult = await ecommerceContract.getAllProducts();
-        console.log('[useDashboardData] productIdsResult:', productIdsResult);
-        const allProductIds = normalizeArrayResponse(productIdsResult);
-
-        let finalProductCount = 0;
-
-        if (ownerAddress) {
-          // Count products belonging to the owner's companies
-          // If the user owns multiple companies, we count products for all of them
-          for (const pid of allProductIds) {
-            try {
-              const product = await ecommerceContract.getProduct(pid);
-              if (ownedCompanyIds.includes(product.companyId.toString())) {
-                finalProductCount++;
-              }
-            } catch (e) {
-              console.warn(`Error fetching product ${pid}:`, e);
-            }
-          }
-        } else {
-          finalProductCount = allProductIds.length;
+          console.log('[useDashboardData] Filtrando por propietario:', ownerAddress);
+          ownedCompanies = allCompanies.filter((c: any) => {
+            const isMatch = c.owner.toLowerCase() === ownerAddress.toLowerCase();
+            if (isMatch)
+              console.log(
+                `[useDashboardData] Empresa propia encontrada: ${c.name} (ID: ${c.id}, NumericID: ${c.numericId})`
+              );
+            return isMatch;
+          });
         }
 
-        // 3. Customer and Sales (Placeholders for extended logic)
-        // In current Solana contract iteration, global sales and customer counts
-        // might require indexing or specific counter accounts.
-        const customerCount = 0;
-        const totalSales = 0;
-        const recentTransactions: any[] = [];
+        // Use numeric IDs for filtering products and invoices as stored in Solana contract
+        const ownedCompanyNumericIds = ownedCompanies.map(
+          (c: any) => c.numericId || c.id.toString()
+        );
+        const finalCompanyCount = ownedCompanies.length;
+        console.log(
+          '[useDashboardData] IDs numéricos de empresas propias:',
+          ownedCompanyNumericIds
+        );
 
-        console.log('[useDashboardData] finalProductCount:', finalProductCount);
+        // 3. Filter Products belonging to those companies
+        let relevantProducts = allProducts;
+        if (ownerAddress) {
+          relevantProducts = allProducts.filter((p: any) => {
+            const isRelevant = ownedCompanyNumericIds.includes(p.companyId.toString());
+            return isRelevant;
+          });
+          console.log(
+            `[useDashboardData] Productos filtrados: ${relevantProducts.length} de ${allProducts.length}`
+          );
+        }
+        const finalProductCount = relevantProducts.length;
+
+        // 4. Filter Invoices belonging to those companies and calculate sales
+        let relevantInvoices = allInvoices;
+        if (ownerAddress) {
+          relevantInvoices = allInvoices.filter((inv: any) => {
+            const isRelevant = ownedCompanyNumericIds.includes(inv.companyId.toString());
+            return isRelevant;
+          });
+          console.log(
+            `[useDashboardData] Facturas filtradas: ${relevantInvoices.length} de ${allInvoices.length}`
+          );
+        }
+
+        const paidInvoices = relevantInvoices.filter((inv: any) => inv.isPaid);
+        const totalSales = paidInvoices.reduce(
+          (acc: number, inv: any) => acc + parseFloat(inv.totalAmount || '0'),
+          0
+        );
+
+        // 5. Unique Customers derived from the filtered invoices
+        const uniqueCustomers = new Set(relevantInvoices.map((inv: any) => inv.customerAddress));
+        const customerCount = uniqueCustomers.size;
+
+        // 6. Map Recent Transactions (latest 5)
+        const recentTransactions = relevantInvoices
+          .sort((a: any, b: any) => b.timestamp.getTime() - a.timestamp.getTime())
+          .slice(0, 5)
+          .map((inv: any) => ({
+            id: inv.id,
+            type: 'Venta',
+            amount: `${inv.totalAmount} EURT`,
+            from: inv.customerAddress,
+            to: inv.companyId,
+            timestamp: inv.timestamp.toISOString(),
+            status: inv.isPaid ? 'completed' : 'pending',
+          }));
 
         if (isMounted) {
           setData({
@@ -127,9 +153,10 @@ export function useDashboardData(ownerAddress?: string) {
             totalSales,
             recentTransactions,
           });
+          console.log('[useDashboardData] Estadísticas actualizadas con éxito.');
         }
       } catch (err) {
-        console.error('Error fetching dashboard data:', err);
+        console.error('[useDashboardData] Error fatal cargando dashboard:', err);
         if (isMounted) {
           setError(
             err instanceof Error
