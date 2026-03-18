@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 
-import { useSimpleContract } from "./useSimpleContract";
+import { useGlobalContract } from "../contexts/ContractContext";
 
 export type UserRole =
   | "admin"
@@ -23,7 +23,7 @@ export type UserRoleInfo = {
 export function useUserRole(): UserRoleInfo {
   const { publicKey, connected } = useWallet();
   const address = publicKey?.toBase58();
-  const { contract: program } = useSimpleContract();
+  const { contract: program } = useGlobalContract();
 
   const [roleInfo, setRoleInfo] = useState<UserRoleInfo>({ role: "loading" });
 
