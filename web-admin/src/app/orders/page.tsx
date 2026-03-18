@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
 import {
   FileText,
   Search,
@@ -16,7 +16,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
-import { useContract } from '../../hooks/useContract';
+import { useGlobalContract } from '../../contexts/ContractContext';
 import { useRole } from '../../contexts/RoleContext';
 import { RoleGuard } from '../../components/RoleGuard';
 import { formatAddress } from '../../lib/utils';
@@ -31,19 +31,9 @@ export default function OrdersPage() {
 }
 
 function OrdersPageContent() {
-  const { connection } = useConnection();
-  const { publicKey, signTransaction, signAllTransactions } = useWallet();
+  const { publicKey } = useWallet();
+  const { ecommerceContract } = useGlobalContract();
   const { roleInfo, isLoading: roleLoading } = useRole();
-
-  const signer = useMemo(
-    () =>
-      publicKey && signTransaction && signAllTransactions
-        ? { publicKey, signTransaction, signAllTransactions }
-        : null,
-    [publicKey, signTransaction, signAllTransactions]
-  );
-
-  const ecommerceContract = useContract('Ecommerce', connection, signer, null);
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);

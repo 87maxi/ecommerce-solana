@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { useConnection } from '@solana/wallet-adapter-react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Users, Loader2, AlertCircle, FileText, ArrowRight } from 'lucide-react';
-import { useContract } from '../../hooks/useContract';
+import { useGlobalContract } from '../../contexts/ContractContext';
 import { RoleGuard } from '../../components/RoleGuard';
 import { formatAddress } from '../../lib/utils';
 import { Invoice } from '../../types';
@@ -15,8 +14,7 @@ type CustomerData = {
 };
 
 function CustomersPageContent() {
-  const { connection } = useConnection();
-  const ecommerceContract = useContract('Ecommerce', connection, null, null);
+  const { ecommerceContract } = useGlobalContract();
 
   const [customers, setCustomers] = useState<CustomerData[]>([]);
   const [loading, setLoading] = useState(true);

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { useWallet } from '@solana/wallet-adapter-react';
 import {
   Building,
   Plus,
@@ -14,7 +14,7 @@ import {
   X,
   Edit,
 } from 'lucide-react';
-import { useContract } from '../../hooks/useContract';
+import { useGlobalContract } from '../../contexts/ContractContext';
 import { formatAddress, formatDate } from '../../lib/utils';
 import { Company } from '../../types';
 import { RoleGuard } from '../../components/RoleGuard';
@@ -33,16 +33,8 @@ export default function CompaniesPage() {
 }
 
 function CompaniesPageContent() {
-  const { publicKey, signTransaction, signAllTransactions } = useWallet();
-  const { connection } = useConnection();
-  const signer = useMemo(
-    () =>
-      publicKey && signTransaction && signAllTransactions
-        ? { publicKey, signTransaction, signAllTransactions }
-        : null,
-    [publicKey, signTransaction, signAllTransactions]
-  );
-  const ecommerceContract = useContract('Ecommerce', connection, signer, null);
+  const { publicKey } = useWallet();
+  const { ecommerceContract } = useGlobalContract();
 
   console.log('[CompaniesPage] Wallet conectada:', publicKey?.toBase58());
   console.log('[CompaniesPage] Contrato inicializado:', !!ecommerceContract);

@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRole } from '@/contexts/RoleContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { useContract } from '@/hooks/useContract';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { useGlobalContract } from '../../contexts/ContractContext';
 import { RoleAwareNavigation } from '../RoleAwareNavigation';
 import { StatsCard } from '../StatsCard';
 import {
@@ -28,23 +28,15 @@ type CompanyOwnerDashboardProps = {
 
 export function CompanyOwnerDashboard({ companyId, companyName }: CompanyOwnerDashboardProps) {
   const { roleInfo } = useRole();
-  const { publicKey, signTransaction, signAllTransactions } = useWallet();
-  const { connection } = useConnection();
+  const { publicKey } = useWallet();
+
   const {
     data: dashboardData,
     loading: dashboardLoading,
     error: dashboardError,
   } = useDashboardData(publicKey?.toBase58());
 
-  // Fetch recent products for this owner specifically
-  const signer = useMemo(
-    () =>
-      publicKey && signTransaction && signAllTransactions
-        ? { publicKey, signTransaction, signAllTransactions }
-        : null,
-    [publicKey, signTransaction, signAllTransactions]
-  );
-  const ecommerceContract = useContract('Ecommerce', connection, signer, null);
+  const { ecommerceContract } = useGlobalContract();
   const [recentProducts, setRecentProducts] = useState<any[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
 

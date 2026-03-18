@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { useWallet } from '@solana/wallet-adapter-react';
 import Link from 'next/link';
 import {
   Building,
@@ -20,7 +20,7 @@ import {
   FileText,
 } from 'lucide-react';
 
-import { useContract } from '../../../hooks/useContract';
+import { useGlobalContract } from '../../../contexts/ContractContext';
 import { Company, Product } from '../../../types';
 import ProductModal from '../../../components/ProductModal';
 import { RoleGuard } from '../../../components/RoleGuard';
@@ -28,16 +28,8 @@ import { formatAddress } from '../../../lib/utils';
 
 function CompanyDetailContent() {
   const params = useParams();
-  const { publicKey, signTransaction, signAllTransactions } = useWallet();
-  const { connection } = useConnection();
-  const signer = useMemo(
-    () =>
-      publicKey && signTransaction && signAllTransactions
-        ? { publicKey, signTransaction, signAllTransactions }
-        : null,
-    [publicKey, signTransaction, signAllTransactions]
-  );
-  const ecommerceContract = useContract('Ecommerce', connection, signer, null);
+  const { publicKey } = useWallet();
+  const { ecommerceContract } = useGlobalContract();
 
   const companyId = params?.id ? (Array.isArray(params.id) ? params.id[0] : params.id) : null;
 

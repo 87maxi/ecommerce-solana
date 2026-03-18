@@ -1,11 +1,10 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useConnection } from '@solana/wallet-adapter-react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Loader2, AlertCircle, ArrowLeft, FileText, ExternalLink } from 'lucide-react';
-import { useContract } from '../../../hooks/useContract';
+import { useGlobalContract } from '../../../contexts/ContractContext';
 import { useRole } from '../../../contexts/RoleContext';
 import { RoleGuard } from '../../../components/RoleGuard';
 import { formatAddress } from '../../../lib/utils';
@@ -16,9 +15,8 @@ function CustomerDetailPageContent() {
   const params = useParams();
   const customerAddress = params?.id ? (Array.isArray(params.id) ? params.id[0] : params.id) : null;
 
-  const { connection } = useConnection();
   const { roleInfo } = useRole();
-  const ecommerceContract = useContract('Ecommerce', connection, null, null);
+  const { ecommerceContract } = useGlobalContract();
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);

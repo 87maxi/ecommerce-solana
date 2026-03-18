@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { useWallet } from '@solana/wallet-adapter-react';
 import {
   Plus,
   Search,
@@ -14,7 +14,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
-import { useContract } from '../../hooks/useContract';
+import { useGlobalContract } from '../../contexts/ContractContext';
 import { useRole } from '../../contexts/RoleContext';
 import { normalizeArrayResponse } from '../../lib/contractUtils';
 import { formatAddress } from '../../lib/utils';
@@ -31,18 +31,9 @@ export default function ProductsPage() {
 }
 
 function ProductsPageContent() {
-  const { connection } = useConnection();
-  const { publicKey, signTransaction, signAllTransactions } = useWallet();
+  const { publicKey } = useWallet();
+  const { ecommerceContract } = useGlobalContract();
   const { roleInfo, isLoading: roleLoading } = useRole();
-
-  const signer = useMemo(
-    () =>
-      publicKey && signTransaction && signAllTransactions
-        ? { publicKey, signTransaction, signAllTransactions }
-        : null,
-    [publicKey, signTransaction, signAllTransactions]
-  );
-  const ecommerceContract = useContract('Ecommerce', connection, signer, null);
 
   console.log('[ProductsPage] Depuración:', {
     wallet: publicKey?.toBase58(),
