@@ -292,12 +292,18 @@ export function useContract(
           if (isReadOnly) throw new Error('Wallet not connected');
           const pubkey = typeof id === 'string' ? new PublicKey(id) : id;
 
+          const [globalStatePda] = PublicKey.findProgramAddressSync(
+            [Buffer.from('global-state')],
+            program.programId
+          );
+
           const method = program.methods.updateCompany
             ? program.methods.updateCompany(name, description)
             : (program.methods as any).update_company(name, description);
 
           const tx = await method
             .accounts({
+              globalState: globalStatePda,
               company: pubkey,
               owner: signer.publicKey,
             } as any)
@@ -406,6 +412,11 @@ export function useContract(
             program.programId
           );
 
+          const [globalStatePda] = PublicKey.findProgramAddressSync(
+            [Buffer.from('global-state')],
+            program.programId
+          );
+
           const method = program.methods.updateProduct
             ? program.methods.updateProduct(name, description, new BN(price), new BN(stock))
             : (program.methods as any).update_product(
@@ -417,6 +428,7 @@ export function useContract(
 
           const tx = await method
             .accounts({
+              globalState: globalStatePda,
               company: companyPda,
               product: productPda,
               owner: signer.publicKey,
@@ -451,6 +463,11 @@ export function useContract(
             program.programId
           );
 
+          const [globalStatePda] = PublicKey.findProgramAddressSync(
+            [Buffer.from('global-state')],
+            program.programId
+          );
+
           const method = program.methods.toggleProductStatus
             ? program.methods.toggleProductStatus()
             : (program.methods as any).toggle_product_status();
@@ -465,6 +482,7 @@ export function useContract(
 
           const tx = await method
             .accounts({
+              globalState: globalStatePda,
               company: companyPda,
               product: productPda,
               owner: signer.publicKey,

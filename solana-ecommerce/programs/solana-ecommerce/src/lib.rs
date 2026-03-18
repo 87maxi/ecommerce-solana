@@ -357,11 +357,14 @@ pub struct RegisterCompany<'info> {
 
 #[derive(Accounts)]
 pub struct UpdateCompany<'info> {
+    #[account(seeds = [GLOBAL_STATE_SEED], bump)]
+    pub global_state: Account<'info, GlobalState>,
+
     #[account(
         mut,
         seeds = [COMPANY_SEED, company.id.to_le_bytes().as_ref()],
         bump,
-        constraint = company.owner == owner.key() @ EcommerceError::Unauthorized
+        constraint = company.owner == owner.key() || global_state.owner == owner.key() @ EcommerceError::Unauthorized
     )]
     pub company: Account<'info, Company>,
 
@@ -386,10 +389,13 @@ pub struct UpdateCompanyStatus<'info> {
 
 #[derive(Accounts)]
 pub struct UpdateProductStatus<'info> {
+    #[account(seeds = [GLOBAL_STATE_SEED], bump)]
+    pub global_state: Account<'info, GlobalState>,
+
     #[account(
         seeds = [COMPANY_SEED, company.id.to_le_bytes().as_ref()],
         bump,
-        constraint = company.owner == owner.key() @ EcommerceError::Unauthorized
+        constraint = company.owner == owner.key() || global_state.owner == owner.key() @ EcommerceError::Unauthorized
     )]
     pub company: Account<'info, Company>,
 
@@ -433,10 +439,13 @@ pub struct AddProduct<'info> {
 
 #[derive(Accounts)]
 pub struct UpdateProduct<'info> {
+    #[account(seeds = [GLOBAL_STATE_SEED], bump)]
+    pub global_state: Account<'info, GlobalState>,
+
     #[account(
         seeds = [COMPANY_SEED, company.id.to_le_bytes().as_ref()],
         bump,
-        constraint = company.owner == owner.key() @ EcommerceError::Unauthorized
+        constraint = company.owner == owner.key() || global_state.owner == owner.key() @ EcommerceError::Unauthorized
     )]
     pub company: Account<'info, Company>,
 
@@ -453,10 +462,13 @@ pub struct UpdateProduct<'info> {
 
 #[derive(Accounts)]
 pub struct UpdateProductStock<'info> {
+    #[account(seeds = [GLOBAL_STATE_SEED], bump)]
+    pub global_state: Account<'info, GlobalState>,
+
     #[account(
         seeds = [COMPANY_SEED, company.id.to_le_bytes().as_ref()],
         bump,
-        constraint = company.owner == owner.key() @ EcommerceError::Unauthorized
+        constraint = company.owner == owner.key() || global_state.owner == owner.key() @ EcommerceError::Unauthorized
     )]
     pub company: Account<'info, Company>,
 
