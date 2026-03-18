@@ -1,5 +1,21 @@
 # E-Commerce Solana: Ecosistema Descentralizado de Pagos y Comercio
 
+
+## Web3 ecommece**
+
+![ecommerce front](assets/ecommerce-customer.png)
+
+
+## Web3 amin
+
+![ecommerce administrador](assets/ecommerce-admin.png)
+
+
+## Euro token compra con stripe
+
+![ecommerce administrador](assets/euro-token.png)
+
+
 ## 1. Resumen del Proyecto
 
 Este ecosistema representa una solución integral de comercio electrónico construida sobre la blockchain de **Solana**. Originalmente concebido en Ethereum, el sistema ha sido migrado y optimizado para aprovechar la alta velocidad y bajos costos de transacción de Solana, utilizando el framework **Anchor**.
