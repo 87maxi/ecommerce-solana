@@ -1,5 +1,5 @@
 {
-  "programId": "4ourUpEhfq64WVb1gRwR7fxkWbKZnMPmbx6D6dFwvGCq",
+  "programId": "5vC8pVqZguD8NB4qrrULXkXoN5ebfdsZLitYLmqpJAQj",
   "steps": [
     {
       "instruction": "register_company",
@@ -29,6 +29,7 @@
       "description": "Añadir Laptop Pro",
       "args": [
         "Laptop Pro",
+        "Potente laptop para profesionales con procesador de última generación",
         120000,
         50
       ],
@@ -54,6 +55,7 @@
       "description": "Añadir Monitor 4K",
       "args": [
         "Monitor 4K",
+        "Monitor ultra alta definición con colores vibrantes y precisión profesional",
         45000,
         100
       ],
@@ -79,6 +81,7 @@
       "description": "Añadir Smartphone X1",
       "args": [
         "Smartphone X1",
+        "Teléfono inteligente con pantalla OLED y cámara de alta resolución",
         89900,
         75
       ],
@@ -104,6 +107,7 @@
       "description": "Añadir Teclado Mecánico",
       "args": [
         "Teclado Mecánico RGB",
+        "Teclado mecánico con interruptores táctiles e iluminación personalizable",
         12500,
         150
       ],
@@ -129,6 +133,7 @@
       "description": "Añadir Ratón Gaming",
       "args": [
         "Mouse Pro Wireless",
+        "Ratón inalámbrico de baja latencia y alta precisión para gaming",
         7900,
         200
       ],

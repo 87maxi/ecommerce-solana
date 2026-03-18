@@ -218,20 +218,29 @@ async function main() {
           step.instruction === "initialize_ecommerce"
         ) {
           // Sin argumentos extra
-        } else if (step.instruction === "register_company") {
+        } else if (
+          step.instruction === "register_company" ||
+          step.instruction === "update_company"
+        ) {
           // name: String, description: String
           buffers.push(serializeBorshString(step.args[0]));
           buffers.push(serializeBorshString(step.args[1]));
-        } else if (step.instruction === "add_product") {
-          // name: String, price: u64, stock: u64
+        } else if (
+          step.instruction === "add_product" ||
+          step.instruction === "update_product"
+        ) {
+          // name: String, description: String, price: u64, stock: u64
           buffers.push(serializeBorshString(step.args[0]));
-          buffers.push(serializeBorshU64(step.args[1]));
+          buffers.push(serializeBorshString(step.args[1]));
           buffers.push(serializeBorshU64(step.args[2]));
+          buffers.push(serializeBorshU64(step.args[3]));
         } else if (
           step.instruction === "mint_tokens" ||
-          step.instruction === "burn_tokens"
+          step.instruction === "burn_tokens" ||
+          step.instruction === "update_stock" ||
+          step.instruction === "decrease_stock"
         ) {
-          // amount: u64
+          // amount/quantity/new_stock: u64
           buffers.push(serializeBorshU64(step.args[0]));
         } else {
           throw new Error(
