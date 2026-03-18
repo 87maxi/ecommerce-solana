@@ -4,12 +4,12 @@ import Link from 'next/link';
 
 export function UnregisteredDashboard() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-[70vh] flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 animate-fade-in">
+      <div className="max-w-4xl mx-auto w-full">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-2 border-yellow-500/30 rounded-full mb-6 shadow-lg shadow-yellow-500/20">
+          <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 border border-cyan-500/30 rounded-full mb-6 shadow-lg shadow-cyan-500/20">
             <svg
-              className="w-12 h-12 text-yellow-400"
+              className="w-12 h-12 text-cyan-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -18,45 +18,46 @@ export function UnregisteredDashboard() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth="2"
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
           </div>
           <h1 className="text-4xl font-extrabold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent sm:text-5xl mb-4">
-            Cuenta No Registrada
+            Bienvenido a la Plataforma
           </h1>
           <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-            Tu billetera está conectada pero no está registrada en el sistema
+            Tu billetera está conectada. Elige cómo quieres participar en nuestro ecosistema.
           </p>
         </div>
 
-        {/* Warning Box */}
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-yellow-500/30 p-8 mb-8">
+        {/* Info Box */}
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-cyan-500/20 p-8 mb-8">
           <div className="flex items-start">
             <div className="flex-shrink-0">
-              <svg
-                className="h-8 w-8 text-yellow-400"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
+              <svg className="h-8 w-8 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
-                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
                   clipRule="evenodd"
                 />
               </svg>
             </div>
             <div className="ml-4 flex-1">
-              <h3 className="text-lg font-semibold text-slate-200 mb-2">
-                Acceso Limitado
-              </h3>
+              <h3 className="text-lg font-semibold text-slate-200 mb-2">Comienza tu Experiencia</h3>
               <div className="text-slate-300 space-y-2">
                 <p>
-                  Para acceder al panel de administración y gestionar el e-commerce, necesitas registrarte como:
+                  Para interactuar con la plataforma y gestionar productos o compras, necesitas un
+                  perfil activo:
                 </p>
                 <ul className="list-disc list-inside ml-4 space-y-1 text-slate-400">
-                  <li><strong className="text-slate-300">Empresa:</strong> Si deseas vender productos en la plataforma</li>
-                  <li><strong className="text-slate-300">Cliente:</strong> Si deseas comprar productos (disponible próximamente)</li>
+                  <li>
+                    <strong className="text-slate-300">Empresa:</strong> Si deseas vender y
+                    administrar tus productos
+                  </li>
+                  <li>
+                    <strong className="text-slate-300">Cliente:</strong> Si deseas explorar y
+                    comprar productos (próximamente)
+                  </li>
                 </ul>
               </div>
             </div>
@@ -64,9 +65,9 @@ export function UnregisteredDashboard() {
         </div>
 
         {/* Action Buttons */}
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-cyan-500/20 p-8">
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-cyan-500/20 p-8 mb-8">
           <h3 className="text-lg font-semibold text-slate-200 mb-6 text-center">
-            ¿Qué te gustaría hacer?
+            Selecciona tu Perfil
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Link
@@ -88,9 +89,7 @@ export function UnregisteredDashboard() {
                   />
                 </svg>
               </div>
-              <h4 className="text-lg font-semibold text-cyan-300 mb-2">
-                Registrar Empresa
-              </h4>
+              <h4 className="text-lg font-semibold text-cyan-300 mb-2">Registrar Empresa</h4>
               <p className="text-sm text-slate-400 text-center">
                 Crea tu empresa y comienza a vender productos en la plataforma
               </p>
@@ -112,9 +111,7 @@ export function UnregisteredDashboard() {
                   />
                 </svg>
               </div>
-              <h4 className="text-lg font-semibold text-slate-500 mb-2">
-                Registrar Cliente
-              </h4>
+              <h4 className="text-lg font-semibold text-slate-500 mb-2">Registrar Cliente</h4>
               <p className="text-sm text-slate-600 text-center">
                 Próximamente disponible para comprar productos
               </p>
@@ -127,9 +124,7 @@ export function UnregisteredDashboard() {
 
         {/* Info Footer */}
         <div className="mt-8 text-center text-sm text-slate-500">
-          <p>
-            ¿Necesitas ayuda? Contacta al administrador del sistema
-          </p>
+          <p>¿Necesitas ayuda? Contacta al administrador del sistema</p>
         </div>
       </div>
     </div>
