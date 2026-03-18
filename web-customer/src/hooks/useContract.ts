@@ -750,8 +750,25 @@ export function useContract() {
 
         return allInvoices.map((inv: any) => ({
           ...inv.account,
-          id: inv.account.invoiceId.toString(),
-          publicKey: inv.publicKey,
+          id: (inv.account.invoice_id ?? inv.account.invoiceId).toString(),
+          companyId: (
+            inv.account.company_id ?? inv.account.companyId
+          ).toString(),
+          customerAddress: (
+            inv.account.customer_address ?? inv.account.customerAddress
+          ).toBase58(),
+          totalAmount: (
+            Number(inv.account.total_amount ?? inv.account.totalAmount) /
+            1000000
+          ).toFixed(2),
+          timestamp: new Date(
+            Number(inv.account.timestamp) * 1000,
+          ).toLocaleString(),
+          isPaid:
+            inv.account.status &&
+            (!!inv.account.status.Paid || !!inv.account.status.paid),
+          items: inv.account.items || [], // Fallback para evitar errores en la UI
+          publicKey: inv.publicKey.toBase58(),
         }));
       } catch (error) {
         console.error("[useContract] Error al obtener facturas:", error);

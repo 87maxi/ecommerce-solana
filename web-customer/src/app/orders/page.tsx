@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Loader2,
   ShoppingBag,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,10 +27,11 @@ interface OrderItem {
 }
 
 interface Order {
-  id: number;
+  id: string;
   date: string;
   total: string;
   status: "Pending" | "Shipped" | "Delivered";
+  ipfsCid?: string;
   items: {
     product: {
       name: string;
@@ -63,17 +65,20 @@ export default function OrdersPage() {
               id: invoice.id,
               date: invoice.timestamp,
               total: invoice.totalAmount,
+              ipfsCid: invoice.ipfsCid,
               status: (invoice.isPaid ? "Delivered" : "Pending") as
                 | "Pending"
                 | "Shipped"
                 | "Delivered",
-              items: invoice.items.map((item: any) => ({
+              items: (invoice.items || []).map((item: any) => ({
                 product: {
-                  name: item.productName,
-                  price: item.unitPrice,
-                  image: "/placeholder-product.jpg", // Image not available in invoice items
+                  name: item.name || item.productName || "Producto",
+                  price: (
+                    Number(item.unitPrice || item.price || 0) / 1000000
+                  ).toFixed(2),
+                  image: "/placeholder-product.jpg",
                 },
-                quantity: item.quantity,
+                quantity: Number(item.quantity || 0),
               })),
             };
           });
@@ -207,13 +212,26 @@ export default function OrdersPage() {
                 </div>
               </div>
 
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground mb-1">
-                  Total Amount
-                </p>
-                <p className="text-2xl font-bold text-primary">
-                  {order.total} EURT
-                </p>
+              <div className="text-right flex flex-col items-end gap-3">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Total Amount
+                  </p>
+                  <p className="text-2xl font-bold text-primary">
+                    {order.total} EURT
+                  </p>
+                </div>
+                {order.ipfsCid && (
+                  <a
+                    href={`http://localhost:8080/ipfs/${order.ipfsCid}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-cyan-500 hover:text-cyan-400 transition-colors bg-cyan-500/10 px-3 py-1.5 rounded-lg border border-cyan-500/20"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    View Receipt
+                  </a>
+                )}
               </div>
             </div>
 
