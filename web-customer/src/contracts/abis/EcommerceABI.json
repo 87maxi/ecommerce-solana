@@ -185,6 +185,10 @@
           "type": "string"
         },
         {
+          "name": "description",
+          "type": "string"
+        },
+        {
           "name": "price",
           "type": "u64"
         },
@@ -513,83 +517,6 @@
       "args": []
     },
     {
-      "name": "decrease_stock",
-      "docs": [
-        "Decreases the stock level of a product"
-      ],
-      "discriminator": [
-        178,
-        231,
-        95,
-        55,
-        189,
-        155,
-        211,
-        229
-      ],
-      "accounts": [
-        {
-          "name": "company",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  99,
-                  111,
-                  109,
-                  112,
-                  97,
-                  110,
-                  121
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "company.id",
-                "account": "Company"
-              }
-            ]
-          }
-        },
-        {
-          "name": "product",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  111,
-                  100,
-                  117,
-                  99,
-                  116
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "product.id",
-                "account": "Product"
-              }
-            ]
-          }
-        },
-        {
-          "name": "owner",
-          "signer": true
-        }
-      ],
-      "args": [
-        {
-          "name": "quantity",
-          "type": "u64"
-        }
-      ]
-    },
-    {
       "name": "initialize",
       "docs": [
         "Initializes the global state of the ecommerce platform"
@@ -812,7 +739,6 @@
     {
       "name": "register_customer",
       "docs": [
-        "Deactivates a product",
         "Registers a new customer"
       ],
       "discriminator": [
@@ -922,6 +848,224 @@
       "args": [
         {
           "name": "product_id",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "toggle_product_status",
+      "docs": [
+        "Toggles the active status of a product"
+      ],
+      "discriminator": [
+        171,
+        238,
+        81,
+        238,
+        201,
+        208,
+        28,
+        217
+      ],
+      "accounts": [
+        {
+          "name": "company",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  97,
+                  110,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "company.id",
+                "account": "Company"
+              }
+            ]
+          }
+        },
+        {
+          "name": "product",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  100,
+                  117,
+                  99,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "product.id",
+                "account": "Product"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "update_company",
+      "docs": [
+        "Updates an existing company's information"
+      ],
+      "discriminator": [
+        207,
+        145,
+        102,
+        124,
+        179,
+        41,
+        98,
+        192
+      ],
+      "accounts": [
+        {
+          "name": "company",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  97,
+                  110,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "company.id",
+                "account": "Company"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "update_product",
+      "docs": [
+        "Updates an existing product's information"
+      ],
+      "discriminator": [
+        139,
+        180,
+        241,
+        126,
+        123,
+        240,
+        13,
+        224
+      ],
+      "accounts": [
+        {
+          "name": "company",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  97,
+                  110,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "company.id",
+                "account": "Company"
+              }
+            ]
+          }
+        },
+        {
+          "name": "product",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  100,
+                  117,
+                  99,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "product.id",
+                "account": "Product"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "price",
+          "type": "u64"
+        },
+        {
+          "name": "stock",
           "type": "u64"
         }
       ]
@@ -1426,12 +1570,20 @@
             "type": "string"
           },
           {
+            "name": "description",
+            "type": "string"
+          },
+          {
             "name": "price",
             "type": "u64"
           },
           {
             "name": "stock",
             "type": "u64"
+          },
+          {
+            "name": "is_active",
+            "type": "bool"
           }
         ]
       }

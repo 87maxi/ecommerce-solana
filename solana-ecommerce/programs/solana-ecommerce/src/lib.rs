@@ -57,6 +57,20 @@ pub mod solana_ecommerce {
         Ok(())
     }
 
+    /// Updates an existing company's information
+    pub fn update_company(
+        ctx: Context<UpdateCompany>,
+        name: String,
+        description: String,
+    ) -> Result<()> {
+        let company = &mut ctx.accounts.company;
+        company.name = name;
+        company.description = description;
+
+        msg!("Company updated: ID {}", company.id);
+        Ok(())
+    }
+
     /// Deactivates a company (only by admin or company owner)
     pub fn deactivate_company(ctx: Context<UpdateCompanyStatus>) -> Result<()> {
         let company = &mut ctx.accounts.company;
@@ -81,6 +95,7 @@ pub mod solana_ecommerce {
     pub fn add_product(
         ctx: Context<AddProduct>,
         name: String,
+        description: String,
         price: u64,
         stock: u64,
     ) -> Result<()> {
@@ -93,8 +108,10 @@ pub mod solana_ecommerce {
         product.id = global_state.next_product_id;
         product.company_id = company.id;
         product.name = name;
+        product.description = description;
         product.price = price;
         product.stock = stock;
+        product.is_active = true;
 
         global_state.next_product_id = global_state
             .next_product_id
@@ -102,6 +119,39 @@ pub mod solana_ecommerce {
             .ok_or(EcommerceError::Overflow)?;
 
         msg!("Product added: {} (ID: {})", product.name, product.id);
+        Ok(())
+    }
+
+    /// Updates an existing product's information
+    pub fn update_product(
+        ctx: Context<UpdateProduct>,
+        name: String,
+        description: String,
+        price: u64,
+        stock: u64,
+    ) -> Result<()> {
+        let product = &mut ctx.accounts.product;
+
+        product.name = name;
+        product.description = description;
+        product.price = price;
+        product.stock = stock;
+
+        msg!("Product updated: {} (ID: {})", product.name, product.id);
+        Ok(())
+    }
+
+    /// Toggles the active status of a product
+    pub fn toggle_product_status(ctx: Context<UpdateProductStatus>) -> Result<()> {
+        let product = &mut ctx.accounts.product;
+        product.is_active = !product.is_active;
+
+        msg!(
+            "Product status toggled: {} (ID: {}) New status: {}",
+            product.name,
+            product.id,
+            product.is_active
+        );
         Ok(())
     }
 
@@ -117,26 +167,6 @@ pub mod solana_ecommerce {
         );
         Ok(())
     }
-
-    /// Decreases the stock level of a product
-    pub fn decrease_stock(ctx: Context<UpdateProductStock>, quantity: u64) -> Result<()> {
-        let product = &mut ctx.accounts.product;
-        require!(product.stock >= quantity, EcommerceError::InsufficientStock);
-
-        product.stock = product
-            .stock
-            .checked_sub(quantity)
-            .ok_or(EcommerceError::Overflow)?;
-
-        msg!(
-            "Product stock decreased: {} (ID: {})",
-            product.stock,
-            product.id
-        );
-        Ok(())
-    }
-
-    /// Deactivates a product
 
     /// Registers a new customer
     pub fn register_customer(ctx: Context<RegisterCustomer>) -> Result<()> {
@@ -326,6 +356,19 @@ pub struct RegisterCompany<'info> {
 }
 
 #[derive(Accounts)]
+pub struct UpdateCompany<'info> {
+    #[account(
+        mut,
+        seeds = [COMPANY_SEED, company.id.to_le_bytes().as_ref()],
+        bump,
+        constraint = company.owner == owner.key() @ EcommerceError::Unauthorized
+    )]
+    pub company: Account<'info, Company>,
+
+    pub owner: Signer<'info>,
+}
+
+#[derive(Accounts)]
 pub struct UpdateCompanyStatus<'info> {
     #[account(seeds = [GLOBAL_STATE_SEED], bump)]
     pub global_state: Account<'info, GlobalState>,
@@ -337,6 +380,26 @@ pub struct UpdateCompanyStatus<'info> {
         constraint = company.owner == owner.key() || global_state.owner == owner.key() @ EcommerceError::Unauthorized
     )]
     pub company: Account<'info, Company>,
+
+    pub owner: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct UpdateProductStatus<'info> {
+    #[account(
+        seeds = [COMPANY_SEED, company.id.to_le_bytes().as_ref()],
+        bump,
+        constraint = company.owner == owner.key() @ EcommerceError::Unauthorized
+    )]
+    pub company: Account<'info, Company>,
+
+    #[account(
+        mut,
+        seeds = [PRODUCT_SEED, product.id.to_le_bytes().as_ref()],
+        bump,
+        constraint = product.company_id == company.id @ EcommerceError::Unauthorized
+    )]
+    pub product: Account<'info, Product>,
 
     pub owner: Signer<'info>,
 }
@@ -366,6 +429,26 @@ pub struct AddProduct<'info> {
     pub owner: Signer<'info>,
 
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct UpdateProduct<'info> {
+    #[account(
+        seeds = [COMPANY_SEED, company.id.to_le_bytes().as_ref()],
+        bump,
+        constraint = company.owner == owner.key() @ EcommerceError::Unauthorized
+    )]
+    pub company: Account<'info, Company>,
+
+    #[account(
+        mut,
+        seeds = [PRODUCT_SEED, product.id.to_le_bytes().as_ref()],
+        bump,
+        constraint = product.company_id == company.id @ EcommerceError::Unauthorized
+    )]
+    pub product: Account<'info, Product>,
+
+    pub owner: Signer<'info>,
 }
 
 #[derive(Accounts)]
@@ -464,4 +547,3 @@ pub struct UpdateCart<'info> {
 
     pub system_program: Program<'info, System>,
 }
-
