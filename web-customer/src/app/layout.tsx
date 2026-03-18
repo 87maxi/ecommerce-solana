@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { EuroTokenBalance } from "@/components/EuroTokenBalance";
 import { AppWalletProvider } from "@/components/AppWalletProvider";
 import { BuyEuroTokenButton } from "@/components/BuyEuroTokenButton";
+import { ContractProvider } from "@/contexts/ContractContext";
 import { useIsMounted } from "@/hooks/useIsMounted";
 
 function MainLayout({ children }: { children: React.ReactNode }) {
@@ -228,7 +229,9 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className="bg-background min-h-screen flex flex-col font-body antialiased selection:bg-primary/20 selection:text-primary">
         <AppWalletProvider>
-          <MainLayout>{children}</MainLayout>
+          <ContractProvider>
+            <MainLayout>{children}</MainLayout>
+          </ContractProvider>
         </AppWalletProvider>
       </body>
     </html>
