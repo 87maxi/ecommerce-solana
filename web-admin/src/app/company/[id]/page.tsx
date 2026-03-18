@@ -14,6 +14,8 @@ import {
   AlertCircle,
   ShieldCheck,
   ClipboardCopy,
+  Users,
+  ExternalLink,
 } from 'lucide-react';
 
 import { useContract } from '../../../hooks/useContract';
@@ -39,6 +41,7 @@ function CompanyDetailContent() {
 
   const [company, setCompany] = useState<Company | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [companyCustomers, setCompanyCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
@@ -57,9 +60,10 @@ function CompanyDetailContent() {
     setError(null);
 
     try {
-      const [companyData, productsData] = await Promise.all([
+      const [companyData, productsData, allInvoices] = await Promise.all([
         ecommerceContract.getCompany(companyId),
         ecommerceContract.getCompanyProducts(companyId),
+        ecommerceContract.getAllInvoices(),
       ]);
 
       if (companyData) {
@@ -73,6 +77,32 @@ function CompanyDetailContent() {
 
       const validProducts = productsData.filter((p: any) => p != null);
       setProducts(validProducts);
+
+      // Process customers from invoices for this company
+      const companyInvoices = allInvoices.filter(
+        (inv: any) => inv.companyId === companyId.toString()
+      );
+      const customerMap = new Map<string, any>();
+
+      companyInvoices.forEach((inv: any) => {
+        const addr = inv.customerAddress;
+        if (!customerMap.has(addr)) {
+          customerMap.set(addr, {
+            address: addr,
+            purchaseCount: 0,
+            totalSpent: 0,
+            lastPurchase: inv.timestamp,
+          });
+        }
+        const stats = customerMap.get(addr);
+        stats.purchaseCount += 1;
+        stats.totalSpent += parseFloat(inv.totalAmount);
+        if (inv.timestamp > stats.lastPurchase) {
+          stats.lastPurchase = inv.timestamp;
+        }
+      });
+
+      setCompanyCustomers(Array.from(customerMap.values()));
     } catch (err: any) {
       setError(err.message || 'Error loading company data.');
     } finally {
@@ -200,10 +230,10 @@ function CompanyDetailContent() {
             <div className="flex justify-between items-center">
               <span className="text-slate-500 font-bold uppercase">Owner</span>
               <button
-                onClick={() => copyToClipboard(company.owner.toBase58(), 'owner')}
+                onClick={() => copyToClipboard(company.owner, 'owner')}
                 className="flex items-center gap-2 font-mono text-cyan-400 hover:text-white"
               >
-                {formatAddress(company.owner.toBase58())}
+                {formatAddress(company.owner)}
                 <ShieldCheck className="w-3 h-3" />
                 {copied === 'owner' && <span className="text-cyan-400 text-xs">Copied!</span>}
               </button>
@@ -212,46 +242,91 @@ function CompanyDetailContent() {
         </div>
       </div>
 
-      {/* Products Section */}
-      <div>
-        <h2 className="text-2xl font-bold text-white mb-4">Products ({products.length})</h2>
-        {products.length === 0 ? (
-          <div className="text-center py-16 bg-slate-800/30 rounded-3xl border-dashed border-2 border-slate-700">
-            <Package className="w-12 h-12 mx-auto text-slate-600 mb-4" />
-            <p className="text-slate-500 font-medium">This company has no products yet.</p>
-            {isOwner && (
-              <button
-                onClick={handleAddProduct}
-                className="mt-6 px-6 py-2 bg-cyan-600 text-white text-sm font-bold rounded-xl"
-              >
-                Add First Product
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {products.map(product => (
-              <div
-                key={product.id}
-                className="bg-slate-800/40 p-5 rounded-2xl border border-slate-700/50"
-              >
-                <div className="flex justify-between">
-                  <h3 className="font-bold text-white">{product.name}</h3>
-                  <span className="font-mono font-bold text-cyan-400">{product.price} EURT</span>
+      {/* Detail Sections */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        {/* Products Column */}
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-white mb-4">Products ({products.length})</h2>
+          {products.length === 0 ? (
+            <div className="text-center py-16 bg-slate-800/30 rounded-3xl border-dashed border-2 border-slate-700">
+              <Package className="w-12 h-12 mx-auto text-slate-600 mb-4" />
+              <p className="text-slate-500 font-medium">This company has no products yet.</p>
+              {isOwner && (
+                <button
+                  onClick={handleAddProduct}
+                  className="mt-6 px-6 py-2 bg-cyan-600 text-white text-sm font-bold rounded-xl"
+                >
+                  Add First Product
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {products.map(product => (
+                <div
+                  key={product.id}
+                  className="bg-slate-800/40 p-5 rounded-2xl border border-slate-700/50"
+                >
+                  <div className="flex justify-between">
+                    <h3 className="font-bold text-white">{product.name}</h3>
+                    <span className="font-mono font-bold text-cyan-400">{product.price} EURT</span>
+                  </div>
+                  <p className="text-sm text-slate-400 mt-1">Stock: {product.stock}</p>
+                  {isOwner && (
+                    <button
+                      onClick={() => handleEditProduct(product)}
+                      className="mt-4 text-xs font-bold text-cyan-400 hover:underline"
+                    >
+                      Edit Product
+                    </button>
+                  )}
                 </div>
-                <p className="text-sm text-slate-400 mt-1">Stock: {product.stock}</p>
-                {isOwner && (
-                  <button
-                    onClick={() => handleEditProduct(product)}
-                    className="mt-4 text-xs font-bold text-cyan-400 hover:underline"
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Customers Column */}
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-white mb-4">
+            Company Customers ({companyCustomers.length})
+          </h2>
+          {companyCustomers.length === 0 ? (
+            <div className="text-center py-16 bg-slate-800/30 rounded-3xl border-dashed border-2 border-slate-700">
+              <Users className="w-12 h-12 mx-auto text-slate-600 mb-4" />
+              <p className="text-slate-500 font-medium">
+                No customers have purchased from this company yet.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {companyCustomers.map(cust => (
+                <div
+                  key={cust.address}
+                  className="bg-slate-800/40 p-5 rounded-2xl border border-slate-700/50 flex items-center justify-between group hover:border-cyan-500/30 transition-all"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-slate-400">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="font-mono text-sm text-white">{formatAddress(cust.address)}</p>
+                      <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+                        {cust.purchaseCount} purchases · {cust.totalSpent.toFixed(2)} EURT total
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    href={`/customers/${cust.address}`}
+                    className="p-2 bg-slate-700/50 rounded-lg text-slate-400 hover:text-cyan-400 transition-colors"
                   >
-                    Edit Product
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {isProductModalOpen && (

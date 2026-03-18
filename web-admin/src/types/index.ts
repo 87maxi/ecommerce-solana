@@ -1,9 +1,8 @@
-import { PublicKey } from '@solana/web3.js';
 // Tipos comunes para la aplicación
 
 export type Company = {
   id: string;
-  owner: PublicKey;
+  owner: string;
   name: string;
   description: string;
   isActive: boolean;

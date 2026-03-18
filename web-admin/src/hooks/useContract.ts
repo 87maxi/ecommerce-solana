@@ -119,7 +119,7 @@ export function useContract(
             return companies.map((c: any) => ({
               ...c.account,
               id: c.publicKey.toBase58(),
-              owner: c.account.owner,
+              owner: c.account.owner.toBase58(),
               isActive: (c.account as any).isActive ?? (c.account as any).is_active ?? true,
               createdAt:
                 (c.account as any).createdAt?.toString() ||
@@ -404,12 +404,17 @@ export function useContract(
             }
 
             return invoices.map((inv: any) => ({
-              id: inv.publicKey.toBase58(),
-              companyId: inv.account.companyId.toString(),
-              customerAddress: inv.account.customerAddress.toBase58(),
-              totalAmount: (Number(inv.account.totalAmount) / 1000000).toFixed(2),
+              id: (inv.account.invoice_id ?? inv.account.invoiceId ?? inv.publicKey).toString(),
+              companyId: (inv.account.company_id ?? inv.account.companyId).toString(),
+              customerAddress: (
+                inv.account.customer_address ?? inv.account.customerAddress
+              ).toBase58(),
+              totalAmount: (
+                Number(inv.account.total_amount ?? inv.account.totalAmount) / 1000000
+              ).toFixed(2),
               timestamp: new Date(Number(inv.account.timestamp) * 1000),
-              isPaid: !!inv.account.status.Paid || !!inv.account.status.paid,
+              isPaid:
+                inv.account.status && (!!inv.account.status.Paid || !!inv.account.status.paid),
               paymentTxHash: inv.account.paymentTxHash,
               ipfsCid: inv.account.ipfsCid,
             }));
@@ -434,13 +439,18 @@ export function useContract(
                 },
               },
             ]);
-            return invoices.map((inv: AnchorInvoiceAccount) => ({
-              id: inv.publicKey.toBase58(),
-              companyId: inv.account.companyId.toString(),
-              customerAddress: inv.account.customerAddress.toBase58(),
-              totalAmount: (Number(inv.account.totalAmount) / 1000000).toFixed(2),
+            return invoices.map((inv: any) => ({
+              id: (inv.account.invoice_id ?? inv.account.invoiceId ?? inv.publicKey).toString(),
+              companyId: (inv.account.company_id ?? inv.account.companyId).toString(),
+              customerAddress: (
+                inv.account.customer_address ?? inv.account.customerAddress
+              ).toBase58(),
+              totalAmount: (
+                Number(inv.account.total_amount ?? inv.account.totalAmount) / 1000000
+              ).toFixed(2),
               timestamp: new Date(Number(inv.account.timestamp) * 1000),
-              isPaid: !!inv.account.status.Paid || !!inv.account.status.paid,
+              isPaid:
+                inv.account.status && (!!inv.account.status.Paid || !!inv.account.status.paid),
               paymentTxHash: inv.account.paymentTxHash,
               ipfsCid: inv.account.ipfsCid,
             }));
