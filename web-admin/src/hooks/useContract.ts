@@ -83,32 +83,7 @@ export function useContract(
             const account = (program.account as any).company || (program.account as any).Company;
             if (!account) throw new Error('Account "company" not found in program');
 
-            const programId = program.programId;
-            const coder = program.coder.accounts;
-            const discriminator =
-              (account as any).discriminator || Buffer.from([32, 212, 52, 137, 90, 7, 206, 183]);
-
-            const rawAccounts = await provider.getProgramAccounts(programId, {
-              filters: [{ memcmp: { offset: 0, bytes: bs58.encode(discriminator) } }],
-            });
-
-            console.log(
-              `[useContract] Encontradas ${rawAccounts.length} cuentas de empresas potenciales.`
-            );
-
-            const companies: any[] = [];
-            for (const { pubkey, account: accountInfo } of rawAccounts) {
-              try {
-                const decoded =
-                  coder.decode('company', accountInfo.data) ||
-                  coder.decode('Company', accountInfo.data);
-                companies.push({ publicKey: pubkey, account: decoded });
-              } catch (decodeError: any) {
-                console.warn(
-                  `[useContract] Saltando cuenta legacy ${pubkey.toBase58()} (Error decoding: ${decodeError.message})`
-                );
-              }
-            }
+            const companies = await account.all();
 
             return companies.map((c: any) => ({
               ...c.account,
@@ -128,7 +103,20 @@ export function useContract(
 
         getCompany: async (id: string | PublicKey) => {
           try {
-            const pubkey = typeof id === 'string' ? new PublicKey(id) : id;
+            let pubkey: PublicKey;
+
+            // Si el ID es puramente numérico, es un ID secuencial y necesitamos derivar la PDA
+            if (typeof id === 'string' && /^\d+$/.test(id)) {
+              const companyIdBN = new BN(id);
+              [pubkey] = PublicKey.findProgramAddressSync(
+                [Buffer.from('company'), companyIdBN.toArrayLike(Buffer, 'le', 8)],
+                program.programId
+              );
+            } else {
+              // De lo contrario, asumimos que ya es una PublicKey válida (en string o objeto)
+              pubkey = typeof id === 'string' ? new PublicKey(id) : id;
+            }
+
             const account = (program.account as any).company || (program.account as any).Company;
             const data = (await account.fetch(pubkey)) as any;
             return {
@@ -137,8 +125,10 @@ export function useContract(
               numericId: data.id?.toString() || '0',
               owner: data.owner.toBase58(),
               active: data.isActive ?? data.is_active ?? true,
+              isActive: data.isActive ?? data.is_active ?? true,
             };
           } catch (e) {
+            console.error('[useContract] Error en getCompany:', e);
             return null;
           }
         },
@@ -150,41 +140,22 @@ export function useContract(
             const account = (program.account as any).product || (program.account as any).Product;
             if (!account) throw new Error('Account "product" not found in program');
 
-            const coder = program.coder.accounts;
-            const discriminator =
-              (account as any).discriminator || Buffer.from([102, 76, 55, 251, 38, 73, 224, 229]);
-
-            const rawAccounts = await provider.getProgramAccounts(program.programId, {
-              filters: [{ memcmp: { offset: 0, bytes: bs58.encode(discriminator) } }],
-            });
-
-            const products: any[] = [];
-            for (const { pubkey, account: accountInfo } of rawAccounts) {
-              try {
-                const decoded =
-                  coder.decode('product', accountInfo.data) ||
-                  coder.decode('Product', accountInfo.data);
-                products.push({ publicKey: pubkey, account: decoded });
-              } catch (e: any) {
-                console.warn(
-                  `[useContract] Saltando producto legacy ${pubkey.toBase58()}: ${e.message}`
-                );
-              }
-            }
+            const products = await account.all();
 
             return products.map((p: any) => ({
               ...p.account,
-              id: p.publicKey.toBase58(),
-              numericId: p.account.id?.toString() || '0',
-              companyId:
-                (p.account as any).company_id?.toString() ??
-                (p.account as any).companyId?.toString() ??
-                (p.account as any).company?.toBase58(),
-              price: (p.account as any).price.toString(),
-              stock: (p.account as any).stock.toNumber(),
-              description: 'Premium quality guaranteed at Solana E-Shop',
-              image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800',
-              active: true,
+              id: p.account.id?.toString() || '0',
+              publicKey: p.publicKey.toBase58(),
+              companyId: (p.account.company_id ?? p.account.companyId)?.toString() || '0',
+              price: p.account.price?.toString() || '0',
+              stock: p.account.stock?.toNumber
+                ? p.account.stock.toNumber()
+                : Number(p.account.stock || 0),
+              description: p.account.description || 'Premium quality guaranteed at Solana E-Shop',
+              image:
+                p.account.image ||
+                'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800',
+              active: p.account.is_active ?? p.account.isActive ?? true,
             }));
           } catch (e) {
             console.error('Error fetching all products:', e);
@@ -232,17 +203,18 @@ export function useContract(
 
             return products.map((p: any) => ({
               ...p.account,
-              id: p.publicKey.toBase58(),
-              numericId: p.account.id?.toString() || '0',
-              companyId:
-                (p.account as any).company_id?.toString() ??
-                (p.account as any).companyId?.toString() ??
-                (p.account as any).company?.toBase58(),
-              price: (p.account as any).price.toString(),
-              stock: (p.account as any).stock.toNumber(),
-              description: 'Premium quality guaranteed at Solana E-Shop',
-              image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800',
-              active: true,
+              id: p.account.id?.toString() || '0',
+              publicKey: p.publicKey.toBase58(),
+              companyId: (p.account.company_id ?? p.account.companyId)?.toString() || '0',
+              price: p.account.price?.toString() || '0',
+              stock: p.account.stock?.toNumber
+                ? p.account.stock.toNumber()
+                : Number(p.account.stock || 0),
+              description: p.account.description || 'Premium quality guaranteed at Solana E-Shop',
+              image:
+                p.account.image ||
+                'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800',
+              active: p.account.is_active ?? p.account.isActive ?? true,
             }));
           } catch (e) {
             console.error('Error in getCompanyProducts:', e);
@@ -265,9 +237,10 @@ export function useContract(
                 data.company?.toBase58(),
               price: data.price.toString(),
               stock: data.stock.toNumber(),
-              description: 'Premium quality guaranteed at Solana E-Shop',
-              image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800',
-              active: true,
+              description: data.description || 'Premium quality guaranteed at Solana E-Shop',
+              image:
+                data.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800',
+              active: data.is_active ?? data.isActive ?? true,
             };
           } catch (e) {
             return null;
@@ -315,6 +288,31 @@ export function useContract(
           };
         },
 
+        updateCompany: async (id: string | PublicKey, name: string, description: string) => {
+          if (isReadOnly) throw new Error('Wallet not connected');
+          const pubkey = typeof id === 'string' ? new PublicKey(id) : id;
+
+          const method = program.methods.updateCompany
+            ? program.methods.updateCompany(name, description)
+            : (program.methods as any).update_company(name, description);
+
+          const tx = await method
+            .accounts({
+              company: pubkey,
+              owner: signer.publicKey,
+            } as any)
+            .rpc();
+
+          return {
+            hash: tx,
+            wait: async () => {
+              const latest = await provider.getLatestBlockhash();
+              await provider.confirmTransaction({ signature: tx, ...latest }, 'confirmed');
+              return true;
+            },
+          };
+        },
+
         addProduct: async (
           companyId: any,
           name: string,
@@ -342,8 +340,8 @@ export function useContract(
           );
 
           const method = program.methods.addProduct
-            ? program.methods.addProduct(name, new BN(price), new BN(stock))
-            : (program.methods as any).add_product(name, new BN(price), new BN(stock));
+            ? program.methods.addProduct(name, description, new BN(price), new BN(stock))
+            : (program.methods as any).add_product(name, description, new BN(price), new BN(stock));
 
           const tx = await method
             .accounts({
@@ -365,8 +363,131 @@ export function useContract(
           };
         },
 
+        updateProduct: async (
+          id: string | PublicKey,
+          companyId: string | PublicKey,
+          name: string,
+          description: string,
+          price: any,
+          stock: any
+        ) => {
+          if (isReadOnly) throw new Error('Wallet not connected');
+          // En este contrato, id y companyId son numéricos (u64).
+          // Debemos derivar las PDAs correspondientes usando los seeds.
+          // Ensure we are working with BN for numeric IDs and avoid "Invalid character" error
+          const productIdBN =
+            (typeof id === 'string' && /^\d+$/.test(id)) || typeof id === 'number'
+              ? new BN(id)
+              : id instanceof BN
+                ? id
+                : null;
+
+          const companyIdBN =
+            (typeof companyId === 'string' && /^\d+$/.test(companyId)) ||
+            typeof companyId === 'number'
+              ? new BN(companyId)
+              : companyId instanceof BN
+                ? companyId
+                : null;
+
+          if (!productIdBN || !companyIdBN) {
+            throw new Error(
+              `ID de producto (${id}) o empresa (${companyId}) inválido. Deben ser numéricos.`
+            );
+          }
+
+          const [productPda] = PublicKey.findProgramAddressSync(
+            [Buffer.from('product'), productIdBN.toArrayLike(Buffer, 'le', 8)],
+            program.programId
+          );
+
+          const [companyPda] = PublicKey.findProgramAddressSync(
+            [Buffer.from('company'), companyIdBN.toArrayLike(Buffer, 'le', 8)],
+            program.programId
+          );
+
+          const method = program.methods.updateProduct
+            ? program.methods.updateProduct(name, description, new BN(price), new BN(stock))
+            : (program.methods as any).update_product(
+                name,
+                description,
+                new BN(price),
+                new BN(stock)
+              );
+
+          const tx = await method
+            .accounts({
+              company: companyPda,
+              product: productPda,
+              owner: signer.publicKey,
+            } as any)
+            .rpc();
+
+          return {
+            hash: tx,
+            wait: async () => {
+              const latest = await provider.getLatestBlockhash();
+              await provider.confirmTransaction({ signature: tx, ...latest }, 'confirmed');
+              return true;
+            },
+          };
+        },
+
+        toggleProductStatus: async (id: any) => {
+          if (isReadOnly) throw new Error('Wallet not connected');
+          const productIdBN =
+            (typeof id === 'string' && /^\d+$/.test(id)) || typeof id === 'number'
+              ? new BN(id)
+              : id instanceof BN
+                ? id
+                : null;
+
+          if (!productIdBN) {
+            throw new Error(`ID de producto (${id}) inválido. Debe ser numérico.`);
+          }
+
+          const [productPda] = PublicKey.findProgramAddressSync(
+            [Buffer.from('product'), productIdBN.toArrayLike(Buffer, 'le', 8)],
+            program.programId
+          );
+
+          const method = program.methods.toggleProductStatus
+            ? program.methods.toggleProductStatus()
+            : (program.methods as any).toggle_product_status();
+
+          // We need the company PDA to satisfy the UpdateProductStatus account requirements
+          // We fetch the product account to get its company_id
+          const productAccount = await (program.account as any).product.fetch(productPda);
+          const [companyPda] = PublicKey.findProgramAddressSync(
+            [Buffer.from('company'), productAccount.companyId.toArrayLike(Buffer, 'le', 8)],
+            program.programId
+          );
+
+          const tx = await method
+            .accounts({
+              company: companyPda,
+              product: productPda,
+              owner: signer.publicKey,
+            } as any)
+            .rpc();
+
+          return {
+            hash: tx,
+            wait: async () => {
+              const latest = await provider.getLatestBlockhash();
+              await provider.confirmTransaction({ signature: tx, ...latest }, 'confirmed');
+              return true;
+            },
+          };
+        },
+
+        deleteProduct: async (id: string | PublicKey) => {
+          // Placeholder for delete functionality
+          return { hash: '', wait: async () => true };
+        },
+
         createProduct: async (cid: any, n: string, d: string, p: any, s: any) =>
-          contract.addProduct(cid, n, d, p, s),
+          (contract as any).addProduct(cid, n, d, p, s),
 
         owner: async () => (signer?.publicKey ? signer.publicKey.toBase58() : null),
         isCustomerRegistered: async (address: string) => false,
@@ -378,27 +499,7 @@ export function useContract(
             const account = (program.account as any).invoice || (program.account as any).Invoice;
             if (!account) throw new Error('Account "invoice" not found in program');
 
-            const coder = program.coder.accounts;
-            const discriminator =
-              (account as any).discriminator || Buffer.from([51, 194, 250, 114, 6, 104, 18, 164]);
-
-            const rawAccounts = await provider.getProgramAccounts(program.programId, {
-              filters: [{ memcmp: { offset: 0, bytes: bs58.encode(discriminator) } }],
-            });
-
-            const invoices: any[] = [];
-            for (const { pubkey, account: accountInfo } of rawAccounts) {
-              try {
-                const decoded =
-                  coder.decode('invoice', accountInfo.data) ||
-                  coder.decode('Invoice', accountInfo.data);
-                invoices.push({ publicKey: pubkey, account: decoded });
-              } catch (e: any) {
-                console.warn(
-                  `[useContract] Saltando factura legacy ${pubkey.toBase58()}: ${e.message}`
-                );
-              }
-            }
+            const invoices = await account.all();
 
             return invoices.map((inv: any) => ({
               id: inv.publicKey.toBase58(),

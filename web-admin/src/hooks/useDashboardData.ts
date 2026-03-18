@@ -143,6 +143,7 @@ export function useDashboardData(ownerAddress?: string) {
             to: inv.companyId,
             timestamp: inv.timestamp.toISOString(),
             status: inv.isPaid ? 'completed' : 'pending',
+            ipfsCid: inv.ipfsCid,
           }));
 
         if (isMounted) {

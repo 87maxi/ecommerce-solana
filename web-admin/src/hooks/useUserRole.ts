@@ -15,6 +15,7 @@ export type UserRole =
 export type UserRoleInfo = {
   role: UserRole;
   companyId?: string;
+  companyNumericId?: string;
   companyName?: string;
   error?: string;
 };
@@ -87,7 +88,8 @@ export function useUserRole(): UserRoleInfo {
             console.log('[useUserRole] Rol detectado: Dueño de empresa -', myCompany.name);
             safeSetRoleInfo({
               role: 'company_owner',
-              companyId: myCompany.numericId || myCompany.id.toString(),
+              companyId: myCompany.id.toString(), // Use PDA address for routing
+              companyNumericId: myCompany.numericId, // Use numeric ID for data filtering
               companyName: myCompany.name,
             });
             return;
