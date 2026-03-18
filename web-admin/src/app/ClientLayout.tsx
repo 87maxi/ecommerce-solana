@@ -4,6 +4,7 @@ import React, { ReactNode } from 'react';
 import { Header } from '../components/Header';
 import { ThemeProvider } from '../components/ThemeProvider';
 import { RoleProvider } from '../contexts/RoleContext';
+import { ContractProvider } from '../contexts/ContractContext';
 import { AppWalletProvider } from './providers';
 import { Sidebar } from '../components/Sidebar';
 import { useIsMounted } from '../hooks/useIsMounted';
@@ -27,17 +28,19 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   return (
     <AppWalletProvider>
       <ThemeProvider>
-        <RoleProvider>
-          <div className="flex h-screen overflow-hidden">
-            <Sidebar />
-            <div className="flex flex-col flex-1 overflow-hidden ml-0 md:ml-72 transition-all duration-300">
-              <Header />
-              <main className="flex-1 overflow-y-auto bg-slate-900/50 p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
-                <div className="max-w-7xl mx-auto w-full animate-fade-in">{children}</div>
-              </main>
+        <ContractProvider>
+          <RoleProvider>
+            <div className="flex h-screen overflow-hidden">
+              <Sidebar />
+              <div className="flex flex-col flex-1 overflow-hidden ml-0 md:ml-72 transition-all duration-300">
+                <Header />
+                <main className="flex-1 overflow-y-auto bg-slate-900/50 p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
+                  <div className="max-w-7xl mx-auto w-full animate-fade-in">{children}</div>
+                </main>
+              </div>
             </div>
-          </div>
-        </RoleProvider>
+          </RoleProvider>
+        </ContractProvider>
       </ThemeProvider>
     </AppWalletProvider>
   );
