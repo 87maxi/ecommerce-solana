@@ -60,11 +60,7 @@ function CompanyDetailContent() {
     setError(null);
 
     try {
-      const [companyData, productsData, allInvoices] = await Promise.all([
-        ecommerceContract.getCompany(companyId),
-        ecommerceContract.getCompanyProducts(companyId),
-        ecommerceContract.getAllInvoices(),
-      ]);
+      const companyData = await ecommerceContract.getCompany(companyId);
 
       if (companyData) {
         setCompany(companyData);
@@ -75,13 +71,22 @@ function CompanyDetailContent() {
         throw new Error('Company not found. It may not be registered on this network.');
       }
 
-      const validProducts = productsData.filter((p: any) => p != null);
+      // Fetch products and invoices. We filter them manually by numericId to ensure
+      // consistency with how linking is handled in the Solana contract.
+      const [allProducts, allInvoices] = await Promise.all([
+        ecommerceContract.getAllProducts(),
+        ecommerceContract.getAllInvoices(),
+      ]);
+
+      const companyNumericId = (companyData as any).numericId;
+
+      const validProducts = allProducts.filter(
+        (p: any) => p != null && p.companyId === companyNumericId
+      );
       setProducts(validProducts);
 
-      // Process customers from invoices for this company
-      const companyInvoices = allInvoices.filter(
-        (inv: any) => inv.companyId === companyId.toString()
-      );
+      // Process customers from invoices for this company using numericId
+      const companyInvoices = allInvoices.filter((inv: any) => inv.companyId === companyNumericId);
       const customerMap = new Map<string, any>();
 
       companyInvoices.forEach((inv: any) => {

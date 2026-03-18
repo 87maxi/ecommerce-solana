@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Connection, SystemProgram, PublicKey } from '@solana/web3.js';
-import { BN, Program, AnchorProvider, Idl, utils } from '@coral-xyz/anchor';
+import { BN, Program, AnchorProvider, Idl } from '@coral-xyz/anchor';
 import bs58 from 'bs58';
 import { Company, Product } from '../types';
 
@@ -34,6 +34,7 @@ interface AnchorInvoiceAccount {
 
 /**
  * Hook de contrato optimizado para Solana.
+ * Proporciona acceso a funciones de lectura y escritura del smart contract.
  */
 export function useContract(
   contractName: ContractName,
@@ -82,13 +83,11 @@ export function useContract(
             const account = (program.account as any).company || (program.account as any).Company;
             if (!account) throw new Error('Account "company" not found in program');
 
-            // Manual fetch and decode to handle legacy data gracefully
             const programId = program.programId;
             const coder = program.coder.accounts;
             const discriminator =
               (account as any).discriminator || Buffer.from([32, 212, 52, 137, 90, 7, 206, 183]);
 
-            // Note: provider here is the Connection object passed to the hook
             const rawAccounts = await provider.getProgramAccounts(programId, {
               filters: [{ memcmp: { offset: 0, bytes: bs58.encode(discriminator) } }],
             });
@@ -100,7 +99,6 @@ export function useContract(
             const companies: any[] = [];
             for (const { pubkey, account: accountInfo } of rawAccounts) {
               try {
-                // Try decoding with potential naming variations
                 const decoded =
                   coder.decode('company', accountInfo.data) ||
                   coder.decode('Company', accountInfo.data);
@@ -112,13 +110,10 @@ export function useContract(
               }
             }
 
-            console.log(
-              `[useContract] Empresas decodificadas con éxito (${companies.length}):`,
-              companies
-            );
             return companies.map((c: any) => ({
               ...c.account,
-              id: c.publicKey.toBase58(),
+              id: c.publicKey.toBase58(), // Usamos la PublicKey para el ID de navegación/routing
+              numericId: c.account.id?.toString() || '0', // Guardamos el ID secuencial lógico
               owner: c.account.owner.toBase58(),
               isActive: (c.account as any).isActive ?? (c.account as any).is_active ?? true,
               createdAt:
@@ -139,6 +134,7 @@ export function useContract(
             return {
               ...data,
               id: pubkey.toBase58(),
+              numericId: data.id?.toString() || '0',
               owner: data.owner.toBase58(),
               active: data.isActive ?? data.is_active ?? true,
             };
@@ -179,6 +175,7 @@ export function useContract(
             return products.map((p: any) => ({
               ...p.account,
               id: p.publicKey.toBase58(),
+              numericId: p.account.id?.toString() || '0',
               companyId:
                 (p.account as any).company_id?.toString() ??
                 (p.account as any).companyId?.toString() ??
@@ -200,8 +197,6 @@ export function useContract(
             const companyPubKey =
               typeof companyId === 'string' ? new PublicKey(companyId) : companyId;
 
-            // FILTRO NATIVO: Usamos memcmp para traer solo productos de ESTA empresa
-            // El campo 'company' está justo después del discriminador (8 bytes)
             const account = (program.account as any).product || (program.account as any).Product;
             if (!account) throw new Error('Account "product" not found in program');
 
@@ -238,6 +233,7 @@ export function useContract(
             return products.map((p: any) => ({
               ...p.account,
               id: p.publicKey.toBase58(),
+              numericId: p.account.id?.toString() || '0',
               companyId:
                 (p.account as any).company_id?.toString() ??
                 (p.account as any).companyId?.toString() ??
@@ -261,7 +257,8 @@ export function useContract(
             const data = (await account.fetch(pubkey)) as any;
             return {
               ...data,
-              id: data.id?.toString() ?? pubkey.toBase58(),
+              id: pubkey.toBase58(),
+              numericId: data.id?.toString() || '0',
               companyId:
                 data.companyId?.toString() ??
                 data.company_id?.toString() ??
@@ -404,7 +401,8 @@ export function useContract(
             }
 
             return invoices.map((inv: any) => ({
-              id: (inv.account.invoice_id ?? inv.account.invoiceId ?? inv.publicKey).toString(),
+              id: inv.publicKey.toBase58(),
+              numericId: (inv.account.invoice_id ?? inv.account.invoiceId)?.toString(),
               companyId: (inv.account.company_id ?? inv.account.companyId).toString(),
               customerAddress: (
                 inv.account.customer_address ?? inv.account.customerAddress
@@ -440,7 +438,8 @@ export function useContract(
               },
             ]);
             return invoices.map((inv: any) => ({
-              id: (inv.account.invoice_id ?? inv.account.invoiceId ?? inv.publicKey).toString(),
+              id: inv.publicKey.toBase58(),
+              numericId: (inv.account.invoice_id ?? inv.account.invoiceId)?.toString(),
               companyId: (inv.account.company_id ?? inv.account.companyId).toString(),
               customerAddress: (
                 inv.account.customer_address ?? inv.account.customerAddress

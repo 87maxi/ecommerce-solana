@@ -87,7 +87,7 @@ export function useUserRole(): UserRoleInfo {
             console.log('[useUserRole] Rol detectado: Dueño de empresa -', myCompany.name);
             safeSetRoleInfo({
               role: 'company_owner',
-              companyId: myCompany.id.toString(),
+              companyId: myCompany.numericId || myCompany.id.toString(),
               companyName: myCompany.name,
             });
             return;
