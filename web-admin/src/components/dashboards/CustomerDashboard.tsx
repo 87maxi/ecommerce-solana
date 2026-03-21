@@ -5,6 +5,7 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 
 import { RoleAwareNavigation } from '../RoleAwareNavigation';
 import { StatsCard } from '../StatsCard';
+import { TransactionList } from '../TransactionList';
 
 export function CustomerDashboard() {
   const { publicKey } = useWallet();
@@ -118,6 +119,14 @@ export function CustomerDashboard() {
                 color={stat.color}
               />
             ))}
+          </div>
+
+          {/* Actividad Reciente */}
+          <div className="mt-8">
+            <TransactionList
+              transactions={dashboardData.recentTransactions || []}
+              title="Mis Compras Recientes"
+            />
           </div>
 
           <RoleAwareNavigation />
