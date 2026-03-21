@@ -1,28 +1,25 @@
 'use client';
 
+import { useWallet } from '@solana/wallet-adapter-react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 
 import { RoleAwareNavigation } from '../RoleAwareNavigation';
 import { StatsCard } from '../StatsCard';
 
 export function CustomerDashboard() {
+  const { publicKey } = useWallet();
   const {
     data: dashboardData,
     loading: dashboardLoading,
     error: dashboardError,
-  } = useDashboardData();
+  } = useDashboardData(undefined, publicKey?.toBase58());
 
   const stats = [
     {
       title: 'Ordenes',
-      value: '0',
+      value: dashboardData.recentTransactions.length.toString(),
       icon: (
-        <svg
-          className="h-6 w-6 text-white"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
+        <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -35,14 +32,9 @@ export function CustomerDashboard() {
     },
     {
       title: 'Total Gastado',
-      value: '0',
+      value: `${dashboardData.totalSales.toFixed(2)} EURT`,
       icon: (
-        <svg
-          className="h-6 w-6 text-white"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
+        <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -55,14 +47,11 @@ export function CustomerDashboard() {
     },
     {
       title: 'Última Compra',
-      value: 'Nunca',
+      value: dashboardData.recentTransactions[0]
+        ? new Date(dashboardData.recentTransactions[0].timestamp).toLocaleDateString()
+        : 'Nunca',
       icon: (
-        <svg
-          className="h-6 w-6 text-white"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
+        <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -75,14 +64,9 @@ export function CustomerDashboard() {
     },
     {
       title: 'Productos',
-      value: '0',
+      value: dashboardData.productCount.toString(),
       icon: (
-        <svg
-          className="h-6 w-6 text-white"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
+        <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -105,8 +89,7 @@ export function CustomerDashboard() {
           Panel del Cliente
         </h1>
         <p className="mt-4 text-lg text-slate-400">
-          Gestiona tus órdenes, productos y actividad en el e-commerce
-          descentralizado
+          Gestiona tus órdenes, productos y actividad en el e-commerce descentralizado
         </p>
       </div>
 

@@ -14,10 +14,11 @@ type DashboardData = {
 };
 
 /**
- * Hook to fetch dashboard data, with optional filtering by owner address.
+ * Hook to fetch dashboard data, with optional filtering by owner address or customer address.
  * If ownerAddress is provided, counts and lists will only include entities related to that owner's companies.
+ * If customerAddress is provided, it filters data specifically for that customer.
  */
-export function useDashboardData(ownerAddress?: string) {
+export function useDashboardData(ownerAddress?: string, customerAddress?: string) {
   const { publicKey } = useWallet();
   const { ecommerceContract } = useGlobalContract();
 
@@ -97,7 +98,7 @@ export function useDashboardData(ownerAddress?: string) {
         }
         const finalProductCount = relevantProducts.length;
 
-        // 4. Filter Invoices belonging to those companies and calculate sales
+        // 4. Filter Invoices belonging to those companies or specific customer and calculate sales
         let relevantInvoices = allInvoices;
         if (ownerAddress) {
           relevantInvoices = allInvoices.filter((inv: any) => {
@@ -105,7 +106,14 @@ export function useDashboardData(ownerAddress?: string) {
             return isRelevant;
           });
           console.log(
-            `[useDashboardData] Facturas filtradas: ${relevantInvoices.length} de ${allInvoices.length}`
+            `[useDashboardData] Facturas filtradas por empresa: ${relevantInvoices.length} de ${allInvoices.length}`
+          );
+        } else if (customerAddress) {
+          relevantInvoices = allInvoices.filter((inv: any) => {
+            return inv.customerAddress.toLowerCase() === customerAddress.toLowerCase();
+          });
+          console.log(
+            `[useDashboardData] Facturas filtradas por cliente: ${relevantInvoices.length} de ${allInvoices.length}`
           );
         }
 
@@ -125,7 +133,7 @@ export function useDashboardData(ownerAddress?: string) {
           .slice(0, 5)
           .map((inv: any) => ({
             id: inv.id,
-            type: 'Venta',
+            type: customerAddress ? 'Compra' : 'Venta',
             amount: `${inv.totalAmount} EURT`,
             from: inv.customerAddress,
             to: inv.companyId,
@@ -163,7 +171,7 @@ export function useDashboardData(ownerAddress?: string) {
     return () => {
       isMounted = false;
     };
-  }, [ecommerceContract, ownerAddress]);
+  }, [ecommerceContract, ownerAddress, customerAddress]);
 
   return { data, loading, error };
 }
