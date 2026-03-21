@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Connection, SystemProgram, PublicKey } from '@solana/web3.js';
 import { BN, Program, AnchorProvider, Idl } from '@coral-xyz/anchor';
 import bs58 from 'bs58';
+import { Buffer } from 'buffer';
 import { Company, Product } from '../types';
 
 import { ABIS, ContractName } from '../lib/contracts/abis';
@@ -507,9 +508,60 @@ export function useContract(
         createProduct: async (cid: any, n: string, d: string, p: any, s: any) =>
           (contract as any).addProduct(cid, n, d, p, s),
 
-        owner: async () => (signer?.publicKey ? signer.publicKey.toBase58() : null),
-        isCustomerRegistered: async (address: string) => false,
-        getCustomer: async (address: string) => null,
+        owner: async () => {
+          try {
+            const [globalStatePda] = PublicKey.findProgramAddressSync(
+              [Buffer.from('global-state')],
+              program.programId
+            );
+            const globalStateAccount =
+              (program.account as any).globalState || (program.account as any).GlobalState;
+            if (!globalStateAccount) return null;
+            const state = await globalStateAccount.fetch(globalStatePda);
+            return state.owner.toBase58();
+          } catch (e) {
+            console.error('Error fetching owner:', e);
+            return null;
+          }
+        },
+
+        isCustomerRegistered: async (address: string) => {
+          try {
+            const userPubKey = new PublicKey(address);
+            const [customerPda] = PublicKey.findProgramAddressSync(
+              [Buffer.from('customer'), userPubKey.toBuffer()],
+              program.programId
+            );
+            const customerAccount =
+              (program.account as any).customer || (program.account as any).Customer;
+            if (!customerAccount) return false;
+            await customerAccount.fetch(customerPda);
+            return true;
+          } catch {
+            return false;
+          }
+        },
+
+        getCustomer: async (address: string) => {
+          try {
+            const userPubKey = new PublicKey(address);
+            const [customerPda] = PublicKey.findProgramAddressSync(
+              [Buffer.from('customer'), userPubKey.toBuffer()],
+              program.programId
+            );
+            const customerAccount =
+              (program.account as any).customer || (program.account as any).Customer;
+            if (!customerAccount) return null;
+            const data = await customerAccount.fetch(customerPda);
+            return {
+              ...data,
+              isRegistered: data.isRegistered ?? data.is_registered ?? true,
+              customerAddress: (data.address || data.customer_address)?.toBase58(),
+            };
+          } catch {
+            return null;
+          }
+        },
 
         getAllInvoices: async () => {
           try {
