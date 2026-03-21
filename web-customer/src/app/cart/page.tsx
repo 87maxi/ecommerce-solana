@@ -45,7 +45,6 @@ export default function CartPage() {
     createInvoice,
     processPayment,
     clearCart,
-    checkAndRegisterCustomer,
   } = useContract();
   const { connected, publicKey } = useWallet();
   const {
@@ -174,9 +173,6 @@ export default function CartPage() {
 
       // En esta demo, usamos una wallet de destino fija (vendedor del fixture)
       const merchantAddress = "7eCTmt5LYSqnjgw8jebHjUzf8X7omxEpxYHbsXsmPtZQ";
-
-      console.log("Asegurando registro del cliente on-chain...");
-      await checkAndRegisterCustomer();
 
       console.log("Iniciando pago directo on-chain con EURT...");
       const paymentResult = await processPayment(merchantAddress, total);
