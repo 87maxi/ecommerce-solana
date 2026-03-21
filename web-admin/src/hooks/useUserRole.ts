@@ -65,7 +65,21 @@ export function useUserRole(): UserRoleInfo {
 
         console.log('[useUserRole] Verificando rol para:', address);
 
-        // First, check if the user owns any companies (Optimized)
+        // 1. Check if the user is the contract owner (admin) - HIGHEST PRIORITY
+        try {
+          const contractOwner = await ecommerceContract.owner();
+          console.log('[useUserRole] Admin del contrato on-chain:', contractOwner);
+
+          if (contractOwner && contractOwner.toLowerCase() === address.toLowerCase()) {
+            console.log('[useUserRole] Rol detectado: Admin');
+            safeSetRoleInfo({ role: 'admin' });
+            return;
+          }
+        } catch (err) {
+          console.error('[useUserRole] Error verificando admin:', err);
+        }
+
+        // 2. Check if the user owns any companies
         try {
           console.log('[useUserRole] Consultando empresas para verificar propiedad...');
           const companies = await ecommerceContract.getAllCompanies();
@@ -87,16 +101,6 @@ export function useUserRole(): UserRoleInfo {
           }
         } catch (err) {
           console.error('[useUserRole] Error consultando empresas:', err);
-        }
-
-        // Then check if the user is the contract owner (admin)
-        const contractOwner = await ecommerceContract.owner();
-        console.log('[useUserRole] Admin del contrato on-chain:', contractOwner);
-
-        if (contractOwner && contractOwner.toLowerCase() === address.toLowerCase()) {
-          console.log('[useUserRole] Rol detectado: Admin');
-          safeSetRoleInfo({ role: 'admin' });
-          return;
         }
 
         // Check if the user is registered as a customer
