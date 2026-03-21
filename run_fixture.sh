@@ -13,12 +13,14 @@ DEFAULT_FIXTURE="$SCRIPT_DIR/fixture/ecommerce_data.json"
 # 1. Obtener la ruta absoluta del archivo de fixture y el Program ID opcional
 # Argumento 1: Ruta al archivo de fixture (obligatorio)
 # Argumento 2: Program ID (opcional, sobrescribe el del fixture)
+# Argumento 3: Keypair file (opcional)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEFAULT_FIXTURE="$SCRIPT_DIR/fixture/ecommerce_data.json"
 
 FIXTURE_FILE=""
 OVERRIDE_PROGRAM_ID=""
+KEYPAIR_FILE=""
 
 if [ -n "$1" ]; then
     # Si el primer argumento es un archivo, lo asignamos como FIXTURE_FILE
@@ -27,10 +29,16 @@ if [ -n "$1" ]; then
         if [ -n "$2" ]; then
             OVERRIDE_PROGRAM_ID="$2"
         fi
+        if [ -n "$3" ]; then
+            KEYPAIR_FILE="$3"
+        fi
     # Si no es un archivo, asumimos que es el Program ID y usamos el fixture por defecto
     else
         OVERRIDE_PROGRAM_ID="$1"
         FIXTURE_FILE="$DEFAULT_FIXTURE"
+        if [ -n "$2" ]; then
+            KEYPAIR_FILE="$2"
+        fi
     fi
 else
     FIXTURE_FILE="$DEFAULT_FIXTURE"
@@ -55,6 +63,9 @@ echo "🚀 Ejecutando motor de metaprogramación (Rust Native)..."
 ARGS=("--fixture" "$FIXTURE_FILE")
 if [ -n "$OVERRIDE_PROGRAM_ID" ]; then
     ARGS+=("--program-id" "$OVERRIDE_PROGRAM_ID")
+fi
+if [ -n "$KEYPAIR_FILE" ]; then
+    ARGS+=("--keypair" "$KEYPAIR_FILE")
 fi
 
 # Ejecutamos con cargo

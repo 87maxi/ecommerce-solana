@@ -21,6 +21,9 @@ struct Args {
 
     #[arg(short, long)]
     program_id: Option<String>,
+
+    #[arg(short, long, default_value = "/home/maxi/.config/solana/id.json")]
+    keypair: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -48,8 +51,8 @@ fn main() -> Result<()> {
     let program_id = Pubkey::from_str(&program_id_str)?;
 
     // 2. Setup Client
-    let payer = read_keypair_file("/home/maxi/.config/solana/id.json")
-        .map_err(|e| anyhow!("Failed to read keypair: {}", e))?;
+    let payer =
+        read_keypair_file(&args.keypair).map_err(|e| anyhow!("Failed to read keypair: {}", e))?;
     let cluster = Cluster::Localnet;
     let client = Client::new_with_options(cluster, Rc::new(payer), CommitmentConfig::confirmed());
     let program = client.program(program_id)?;
