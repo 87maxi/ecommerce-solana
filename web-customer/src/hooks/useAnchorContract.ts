@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Connection,
   PublicKey,
   SystemProgram,
   Transaction,
+  TransactionInstruction,
 } from "@solana/web3.js";
 import { Program, AnchorProvider, Idl, BN } from "@coral-xyz/anchor";
 import { Buffer } from "buffer";
@@ -18,264 +19,249 @@ import {
 } from "@solana/spl-token";
 import EcommerceABI from "@/contracts/abis/EcommerceABI.json";
 
-const PROGRAM_ID = process.env.NEXT_PUBLIC_ECOMMERCE_CONTRACT_ADDRESS || "";
+// --- Configuration & Constants ---
+const PROGRAM_ID = new PublicKey(
+  process.env.NEXT_PUBLIC_ECOMMERCE_CONTRACT_ADDRESS ||
+    "5vC8pVqZguD8NB4qrrULXkXoN5ebfdsZLitYLmqpJAQj",
+);
 
+const EURT_MINT = new PublicKey(
+  process.env.NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS ||
+    process.env.NEXT_PUBLIC_EUROTOKEN_MINT ||
+    "AKWdemYgbmSujB1jTMm8q6q3fKTtcxr5XXp8tSSoDekC",
+);
+
+const DEFAULT_MERCHANT = new PublicKey(
+  process.env.NEXT_PUBLIC_MERCHANT_ADDRESS ||
+    "7eCTmt5LYSqnjgw8jebHjUzf8X7omxEpxYHbsXsmPtZQ",
+);
+
+const SEEDS = {
+  CUSTOMER: Buffer.from("customer"),
+  CART: Buffer.from("shopping-cart"),
+  GLOBAL_STATE: Buffer.from("global-state"),
+  INVOICE: Buffer.from("invoice"),
+  PRODUCT: Buffer.from("product"),
+};
+
+// --- Helper Functions ---
+const findPDA = (seeds: (Buffer | Uint8Array)[], programId: PublicKey) => {
+  return PublicKey.findProgramAddressSync(seeds, programId);
+};
+
+/**
+ * Main Hook for interacting with the Solana Ecommerce Smart Contract.
+ * Refactored for efficiency, atomic transactions, and better organization.
+ */
 export function useContract() {
   const { connection } = useConnection();
   const { publicKey, sendTransaction, signTransaction, signAllTransactions } =
     useWallet();
-  const walletAddress = publicKey?.toBase58();
-
   const [program, setProgram] = useState<Program | null>(null);
-  const [account, setAccount] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Stable signer object for AnchorProvider
-  const signer = useMemo(
-    () =>
-      publicKey && signTransaction && signAllTransactions
-        ? { publicKey, signTransaction, signAllTransactions }
-        : null,
-    [publicKey, signTransaction, signAllTransactions],
-  );
-
-  // Initialize the Anchor Program
+  // 1. Program Initialization
   useEffect(() => {
-    let isMounted = true;
+    if (!connection) return;
 
-    if (!connection) {
-      return;
-    }
-
-    const initProgram = async () => {
-      // Check if we already have a program initialized with the current wallet to avoid race conditions
-      const targetPubKey = walletAddress || "11111111111111111111111111111111";
-      if (
-        isInitialized &&
-        program &&
-        program.provider.publicKey?.toBase58() === targetPubKey
-      ) {
-        return;
-      }
-
+    const setupProgram = async () => {
       try {
-        console.log(
-          `[useContract] Initializing Anchor program for ${walletAddress || "public access"}...`,
-        );
+        const providerSigner =
+          publicKey && signTransaction && signAllTransactions
+            ? { publicKey, signTransaction, signAllTransactions }
+            : {
+                publicKey: new PublicKey("11111111111111111111111111111111"),
+                signTransaction: async (tx: any) => tx,
+                signAllTransactions: async (txs: any) => txs,
+              };
 
-        const providerSigner = signer || {
-          publicKey: new PublicKey("11111111111111111111111111111111"),
-          signTransaction: async (tx: any) => tx,
-          signAllTransactions: async (txs: any) => txs,
-        };
-
-        const anchorProvider = new AnchorProvider(
+        const provider = new AnchorProvider(
           connection,
           providerSigner as any,
           AnchorProvider.defaultOptions(),
         );
 
-        if (!PROGRAM_ID) {
-          console.error(
-            "[useContract] Program ID not found in environment variables.",
-          );
-          return;
-        }
+        const idl = {
+          ...(EcommerceABI as any),
+          address: PROGRAM_ID.toBase58(),
+        } as Idl;
+        const ecommerceProgram = new Program(idl, provider);
 
-        const idl = { ...(EcommerceABI as any), address: PROGRAM_ID } as Idl;
-        const ecommerceProgram = new Program(idl, anchorProvider);
-
-        if (isMounted) {
-          setAccount(walletAddress || null);
-          setProgram(ecommerceProgram);
-          setIsInitialized(true);
-          console.log("[useContract] Program initialized successfully.");
-        }
+        setProgram(ecommerceProgram);
+        setIsInitialized(true);
       } catch (error) {
-        console.error("[useContract] Error initializing program:", error);
-        if (isMounted) setIsInitialized(false);
+        console.error("[useContract] Initialization error:", error);
       }
     };
 
-    initProgram();
+    setupProgram();
+  }, [connection, publicKey, signTransaction, signAllTransactions]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [connection, walletAddress, signer]);
-
-  const checkAndRegisterCustomer = useCallback(async (): Promise<boolean> => {
-    if (!program || !publicKey) return false;
-
-    // Safety check: ensure program is using the current wallet
-    if (program.provider.publicKey?.toBase58() !== publicKey.toBase58()) {
-      return false;
-    }
-
-    try {
-      const [customerPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("customer"), publicKey.toBuffer()],
-        program.programId,
-      );
-
-      const customerAccountObj =
-        (program.account as any).customer || (program.account as any).Customer;
-      if (!customerAccountObj) return true;
+  // 2. Transaction Executor (Atomic & Robust)
+  const executeTransaction = useCallback(
+    async (instructions: TransactionInstruction[], description: string) => {
+      if (!publicKey || !connection) {
+        throw new Error("Wallet not connected");
+      }
 
       try {
-        await customerAccountObj.fetch(customerPda);
-        console.log("[useContract] Customer already registered.");
-        return true;
-      } catch (err: any) {
-        if (
-          err.message?.includes("Account does not exist") ||
-          err.message?.includes("AccountNotFound")
-        ) {
-          console.log("[useContract] Registering customer...");
+        console.log(
+          `[useContract] Executing atomic transaction: ${description}`,
+        );
+        const transaction = new Transaction().add(...instructions);
 
-          const method = program.methods.registerCustomer
-            ? program.methods.registerCustomer()
-            : (program.methods as any).register_customer();
+        const { blockhash, lastValidBlockHeight } =
+          await connection.getLatestBlockhash("confirmed");
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = publicKey;
 
-          const tx = await method
-            .accounts({
-              customer: customerPda,
-              user: publicKey,
-              systemProgram: SystemProgram.programId,
-            } as any)
-            .rpc();
-          console.log("[useContract] Customer registered. Hash:", tx);
-          return true;
+        let signature: string;
+
+        // Intentamos usar signTransaction + sendRawTransaction para evitar errores de "Plugin Closed"
+        // que ocurren frecuentemente con sendTransaction en algunas wallets como Backpack o Phantom
+        if (signTransaction) {
+          console.log("[useContract] Signing transaction manually...");
+          const signedTx = await signTransaction(transaction);
+          console.log("[useContract] Sending raw transaction...");
+          signature = await connection.sendRawTransaction(
+            signedTx.serialize(),
+            {
+              skipPreflight: true,
+              preflightCommitment: "confirmed",
+            },
+          );
+        } else if (sendTransaction) {
+          console.log(
+            "[useContract] signTransaction not available, using sendTransaction...",
+          );
+          signature = await sendTransaction(transaction, connection, {
+            skipPreflight: true,
+            preflightCommitment: "confirmed",
+          });
+        } else {
+          throw new Error("No hay un método de firma disponible");
         }
-        throw err;
-      }
-    } catch (error) {
-      console.error(
-        "[useContract] Error checking/registering customer:",
-        error,
-      );
-      return false;
-    }
-  }, [program, publicKey]);
 
-  const getAllProducts = useCallback(async () => {
-    if (!program) return [];
+        console.log(
+          `[useContract] Transaction sent: ${signature}. Waiting for confirmation...`,
+        );
 
-    try {
-      console.log(
-        "[useContract] Fetching all product accounts with robust decoding...",
-      );
+        await connection.confirmTransaction(
+          { signature, blockhash, lastValidBlockHeight },
+          "confirmed",
+        );
 
-      const account =
-        (program.account as any).product || (program.account as any).Product;
-      if (!account) throw new Error('Account "product" not found in program');
+        console.log(`[useContract] Transaction successful: ${description}`);
+        return signature;
+      } catch (error: any) {
+        console.error(`[useContract] Error in ${description}:`, error);
 
-      const coder = program.coder.accounts;
-      const discriminator =
-        (account as any).discriminator ||
-        Buffer.from([102, 76, 55, 251, 38, 73, 224, 229]);
-
-      const rawAccounts = await connection.getProgramAccounts(
-        program.programId,
-        {
-          filters: [
-            { memcmp: { offset: 0, bytes: bs58.encode(discriminator) } },
-          ],
-        },
-      );
-
-      const products: any[] = [];
-      for (const { pubkey, account: accountInfo } of rawAccounts) {
-        try {
-          const decoded =
-            coder.decode("product", accountInfo.data) ||
-            coder.decode("Product", accountInfo.data);
-          products.push({ publicKey: pubkey, account: decoded });
-        } catch (e: any) {
-          console.warn(
-            `[useContract] Skipping malformed product account ${pubkey.toBase58()}: ${e.message}`,
+        const errorMsg = error.message || "";
+        if (
+          errorMsg.includes("Plugin Closed") ||
+          errorMsg.includes("User rejected")
+        ) {
+          throw new Error(
+            "La billetera cerró la conexión o rechazó la transacción. Por favor, asegúrate de que tu wallet esté abierta e intenta de nuevo.",
           );
         }
+        throw error;
       }
+    },
+    [publicKey, connection, sendTransaction, signTransaction],
+  );
 
-      const formattedProducts = products.map((p: any) => ({
+  // 3. Customer Identity Helpers
+  const getRegisterCustomerInstruction =
+    useCallback(async (): Promise<TransactionInstruction | null> => {
+      if (!program || !publicKey) return null;
+
+      const [customerPda] = findPDA(
+        [SEEDS.CUSTOMER, publicKey.toBuffer()],
+        program.programId,
+      );
+      const customerAccount =
+        (program.account as any).customer || (program.account as any).Customer;
+
+      try {
+        await customerAccount.fetch(customerPda);
+        return null; // Already registered
+      } catch {
+        console.log("[useContract] Preparing registration instruction...");
+        const method = program.methods.registerCustomer
+          ? program.methods.registerCustomer()
+          : (program.methods as any).register_customer();
+
+        return await method
+          .accounts({
+            customer: customerPda,
+            user: publicKey,
+            systemProgram: SystemProgram.programId,
+          } as any)
+          .instruction();
+      }
+    }, [program, publicKey]);
+
+  // 4. Products API
+  const getAllProducts = useCallback(async () => {
+    if (!program) return [];
+    try {
+      const productAccount =
+        (program.account as any).product || (program.account as any).Product;
+      const rawAccounts = await productAccount.all();
+
+      return rawAccounts.map((p: any) => ({
         ...p.account,
         id: p.account.id?.toString() ?? p.publicKey.toBase58(),
         publicKey: p.publicKey.toBase58(),
         companyId:
-          (p.account as any).company_id?.toString() ??
-          (p.account as any).companyId?.toString() ??
+          (p.account.companyId || p.account.company_id)?.toString() ||
           "Unknown",
         name: p.account.name,
-        description:
-          p.account.description ||
-          "Premium quality guaranteed at Solana E-Shop",
         price: (Number(p.account.price) / 1000000).toFixed(2),
         stock: Number(p.account.stock),
+        description: p.account.description || "Premium quality product",
         image:
           p.account.image ||
           "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800",
         active: p.account.is_active ?? p.account.isActive ?? true,
       }));
-
-      console.log(
-        `[useContract] Found ${formattedProducts.length} valid products.`,
-      );
-      return formattedProducts;
     } catch (error) {
       console.error("[useContract] Error fetching products:", error);
       return [];
     }
-  }, [program, connection]);
+  }, [program]);
 
+  // 5. Cart Management API
   const getCart = useCallback(async () => {
     if (!program || !publicKey) return [];
     try {
-      const [cartPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("shopping-cart"), publicKey.toBuffer()],
+      const [cartPda] = findPDA(
+        [SEEDS.CART, publicKey.toBuffer()],
         program.programId,
       );
-
-      const cartAccountObj =
+      const cartAccount =
         (program.account as any).shoppingCart ||
         (program.account as any).ShoppingCart;
-      if (!cartAccountObj) return [];
+      const data = await cartAccount.fetch(cartPda);
 
-      const cartAccount = await cartAccountObj.fetch(cartPda);
-      if (!cartAccount || !cartAccount.items) return [];
-
-      return cartAccount.items.map((item: any) => ({
+      return data.items.map((item: any) => ({
         productId: (item.product_id ?? item.productId).toString(),
         quantity: Number(item.quantity),
       }));
-    } catch (error: any) {
-      if (!error.message?.includes("Account does not exist")) {
-        console.error("[useContract] Error fetching on-chain cart:", error);
-      }
-      return [];
+    } catch {
+      return []; // Return empty if cart PDA doesn't exist yet
     }
   }, [program, publicKey]);
 
   const addToCart = useCallback(
     async (productId: string, quantity: number) => {
       if (!program || !publicKey) return false;
-
-      // Safety check: ensure program is using the current wallet
-      if (program.provider.publicKey?.toBase58() !== publicKey.toBase58()) {
-        console.warn(
-          "[useContract] Program provider mismatch, waiting for sync...",
-        );
-        return false;
-      }
-
       try {
-        const [cartPda] = PublicKey.findProgramAddressSync(
-          [Buffer.from("shopping-cart"), publicKey.toBuffer()],
+        const [cartPda] = findPDA(
+          [SEEDS.CART, publicKey.toBuffer()],
           program.programId,
         );
-
-        // Ensure we call the method on the methods object to preserve context
-        // and handle both camelCase and snake_case names from the IDL
         const method = program.methods.addToCart
           ? program.methods.addToCart(new BN(productId), new BN(quantity))
           : (program.methods as any).add_to_cart(
@@ -283,68 +269,62 @@ export function useContract() {
               new BN(quantity),
             );
 
-        const tx = await method
+        const ix = await method
           .accounts({
             cart: cartPda,
             user: publicKey,
             systemProgram: SystemProgram.programId,
           } as any)
-          .rpc();
+          .instruction();
 
-        console.log("[useContract] Successfully added to cart. Hash:", tx);
+        await executeTransaction([ix], "Add item to cart");
         window.dispatchEvent(new Event("cart-updated"));
         return true;
-      } catch (error) {
-        console.error("[useContract] Error adding to cart:", error);
+      } catch {
         return false;
       }
     },
-    [program, publicKey],
+    [program, publicKey, executeTransaction],
   );
 
   const removeFromCart = useCallback(
     async (productId: string) => {
       if (!program || !publicKey) return false;
       try {
-        const [cartPda] = PublicKey.findProgramAddressSync(
-          [Buffer.from("shopping-cart"), publicKey.toBuffer()],
+        const [cartPda] = findPDA(
+          [SEEDS.CART, publicKey.toBuffer()],
           program.programId,
         );
-
-        // Ensure we call the method on the methods object to preserve context
         const method = program.methods.removeFromCart
           ? program.methods.removeFromCart(new BN(productId))
           : (program.methods as any).remove_from_cart(new BN(productId));
 
-        const tx = await method
+        const ix = await method
           .accounts({
             cart: cartPda,
             user: publicKey,
             systemProgram: SystemProgram.programId,
           } as any)
-          .rpc();
+          .instruction();
 
-        console.log("[useContract] Successfully removed from cart. Hash:", tx);
+        await executeTransaction([ix], "Remove item from cart");
         window.dispatchEvent(new Event("cart-updated"));
         return true;
-      } catch (error) {
-        console.error("[useContract] Error removing from cart:", error);
+      } catch {
         return false;
       }
     },
-    [program, publicKey],
+    [program, publicKey, executeTransaction],
   );
 
   const updateQuantity = useCallback(
     async (productId: string, quantity: number) => {
       if (!program || !publicKey) return false;
       try {
-        const [cartPda] = PublicKey.findProgramAddressSync(
-          [Buffer.from("shopping-cart"), publicKey.toBuffer()],
+        const [cartPda] = findPDA(
+          [SEEDS.CART, publicKey.toBuffer()],
           program.programId,
         );
-
-        // Ensure we call the method on the methods object to preserve context
         const method = program.methods.updateQuantity
           ? program.methods.updateQuantity(new BN(productId), new BN(quantity))
           : (program.methods as any).update_quantity(
@@ -352,300 +332,122 @@ export function useContract() {
               new BN(quantity),
             );
 
-        const tx = await method
+        const ix = await method
           .accounts({
             cart: cartPda,
             user: publicKey,
             systemProgram: SystemProgram.programId,
           } as any)
-          .rpc();
+          .instruction();
 
-        console.log(
-          "[useContract] Successfully updated cart quantity. Hash:",
-          tx,
-        );
+        await executeTransaction([ix], "Update item quantity");
         window.dispatchEvent(new Event("cart-updated"));
         return true;
-      } catch (error) {
-        console.error("[useContract] Error updating quantity:", error);
+      } catch {
         return false;
       }
     },
-    [program, publicKey],
+    [program, publicKey, executeTransaction],
   );
 
   const clearCart = useCallback(async () => {
     if (!program || !publicKey) return false;
     try {
-      const [cartPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("shopping-cart"), publicKey.toBuffer()],
+      const [cartPda] = findPDA(
+        [SEEDS.CART, publicKey.toBuffer()],
         program.programId,
       );
-
-      // Ensure we call the method on the methods object to preserve context
       const method = program.methods.clearCart
         ? program.methods.clearCart()
         : (program.methods as any).clear_cart();
-
-      const tx = await method
+      const ix = await method
         .accounts({
           cart: cartPda,
           user: publicKey,
           systemProgram: SystemProgram.programId,
         } as any)
-        .rpc();
-
-      console.log("[useContract] Successfully cleared cart. Hash:", tx);
+        .instruction();
+      await executeTransaction([ix], "Clear cart");
       window.dispatchEvent(new Event("cart-updated"));
       return true;
-    } catch (error) {
-      console.error("[useContract] Error clearing cart:", error);
+    } catch {
       return false;
     }
-  }, [program, publicKey]);
+  }, [program, publicKey, executeTransaction]);
 
-  const getCartItemCount = useCallback(async () => {
-    const items = await getCart();
-    return items.reduce((acc: number, item: any) => acc + item.quantity, 0);
-  }, [getCart]);
-
-  const calculateTotal = useCallback(async () => {
-    if (!program || !publicKey) return "0.00";
-    try {
-      const cartItems = await getCart();
-      if (cartItems.length === 0) return "0.00";
-      const allProducts = await getAllProducts();
-      let total = 0;
-      for (const item of cartItems) {
-        const product = allProducts.find((p: any) => p.id === item.productId);
-        if (product) {
-          total += Math.round(parseFloat(product.price) * 100) * item.quantity;
-        }
-      }
-      return (total / 100).toFixed(2);
-    } catch (error) {
-      console.error("[useContract] Error calculating total:", error);
-      return "0.00";
-    }
-  }, [program, publicKey, getCart, getAllProducts]);
-
-  /**
-   * Realiza un pago directo on-chain utilizando tokens EURT (SPL)
-   * @param merchantAddress La wallet de destino (vendedor)
-   * @param amount El monto total en EURT (formato string decimal)
-   * @returns El hash de la transacción o null si falla
-   */
+  // 6. Payment & Invoicing API
   const processPayment = useCallback(
     async (merchantAddress: string, amount: string) => {
-      if (!publicKey || !connection || !sendTransaction) return null;
+      if (!publicKey || !connection || !program) return null;
 
       try {
-        console.log(
-          "[useContract] Iniciando transferencia de EURT on-chain...",
-        );
-
-        // Dirección del Mint de EURT (desde variables de entorno o fallback)
-        // La dirección AKWdem... es el Mint real verificado en Surfpool.
-        const mintAddress = new PublicKey(
-          process.env.NEXT_PUBLIC_EUROTOKEN_CONTRACT_ADDRESS ||
-            process.env.NEXT_PUBLIC_EUROTOKEN_MINT ||
-            "AKWdemYgbmSujB1jTMm8q6q3fKTtcxr5XXp8tSSoDekC",
-        );
-        // Usamos la dirección del merchant desde el entorno o el argumento
-        let merchantPubKey = new PublicKey(
-          process.env.NEXT_PUBLIC_MERCHANT_ADDRESS ||
-            merchantAddress ||
-            "7eCTmt5LYSqnjgw8jebHjUzf8X7omxEpxYHbsXsmPtZQ",
-        );
-
-        // Para pruebas locales: si intentas pagarte a ti mismo, el saldo no cambiará.
-        // Forzamos una dirección de destino diferente (billetera de prueba local de desarrollo)
-        // para que veas el balance descontarse correctamente en la UI.
-        if (merchantPubKey.toBase58() === publicKey.toBase58()) {
+        let merchantPubKey = new PublicKey(merchantAddress || DEFAULT_MERCHANT);
+        if (merchantPubKey.equals(publicKey)) {
           console.warn(
-            "[useContract] Atención: Estás intentando comprar productos de tu propia tienda. Para ver el débito, el pago se enviará a una wallet de prueba.",
+            "[useContract] Merchant is the same as the user. Sending to dev wallet for test.",
           );
           merchantPubKey = new PublicKey("11111111111111111111111111111111");
         }
 
-        // Obtener las Cuentas de Token Asociadas (ATA)
-        const userAta = await getAssociatedTokenAddress(mintAddress, publicKey);
+        const instructions: TransactionInstruction[] = [];
+
+        // A. Atomic Registration (If needed)
+        const regIx = await getRegisterCustomerInstruction();
+        if (regIx) instructions.push(regIx);
+
+        // B. SPL Token Preparation (ATA)
+        const userAta = await getAssociatedTokenAddress(EURT_MINT, publicKey);
         const merchantAta = await getAssociatedTokenAddress(
-          mintAddress,
+          EURT_MINT,
           merchantPubKey,
         );
 
-        // 1. Verificar si el usuario tiene una ATA y si tiene balance suficiente
-        const userAtaInfo = await connection.getAccountInfo(userAta);
-        if (!userAtaInfo) {
-          console.error(
-            "[useContract] Tu cuenta no tiene tokens EURT. ATA no encontrada.",
-          );
-          alert("No posees tokens EURT para realizar esta compra.");
-          return null;
-        }
-
-        // 2. Calcular el monto en unidades base (EURT usa 6 decimales)
-        const decimals = 6;
-        const amountInUnits = BigInt(
-          Math.round(parseFloat(amount) * Math.pow(10, decimals)),
-        );
-
-        // Verificar balance del usuario
-        const userBalance = await connection.getTokenAccountBalance(userAta);
-        if (BigInt(userBalance.value.amount) < amountInUnits) {
-          console.error(
-            `[useContract] Balance insuficiente. Requerido: ${amount}, Actual: ${userBalance.value.uiAmountString}`,
-          );
-          alert(
-            `Balance insuficiente. Tienes ${userBalance.value.uiAmountString} EURT, pero necesitas ${amount} EURT.`,
-          );
-          return null;
-        }
-
-        // Create the transaction
-        const transaction = new Transaction();
-
-        // 3. Manejar la creación de la ATA del comerciante (Merchant) si no existe
         const merchantAtaInfo = await connection.getAccountInfo(merchantAta);
         if (!merchantAtaInfo) {
-          console.log(
-            "[useContract] Merchant ATA no encontrada. Agregando instrucción de creación a la transacción...",
-          );
-
-          transaction.add(
+          instructions.push(
             createAssociatedTokenAccountInstruction(
-              publicKey, // Payer (Tú)
-              merchantAta, // La ATA a crear
-              merchantPubKey, // El dueño de la ATA (La tienda)
-              mintAddress, // El Mint (EURT)
+              publicKey,
+              merchantAta,
+              merchantPubKey,
+              EURT_MINT,
             ),
           );
         }
 
-        // 4. Agregar la instrucción de transferencia (TransferChecked)
-        console.log(
-          "[useContract] Agregando transferencia de tokens a la transacción...",
+        // C. Transfer Instruction
+        const decimals = 6;
+        const amountInUnits = BigInt(
+          Math.round(parseFloat(amount) * Math.pow(10, decimals)),
         );
-        transaction.add(
+        instructions.push(
           createTransferCheckedInstruction(
-            userAta, // Cuenta de origen
-            mintAddress, // Mint del token
-            merchantAta, // Cuenta de destino
-            publicKey, // Propietario (Owner) que autoriza
-            amountInUnits, // Monto
-            decimals, // Decimales
+            userAta,
+            EURT_MINT,
+            merchantAta,
+            publicKey,
+            amountInUnits,
+            decimals,
           ),
         );
 
-        // Get latest blockhash
-        const { blockhash, lastValidBlockHeight } =
-          await connection.getLatestBlockhash("confirmed");
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = publicKey;
-
-        console.log(
-          "[useContract] Solicitando firma y envío de la transacción combinada...",
+        const signature = await executeTransaction(
+          instructions,
+          "Atomic Payment (Transfer + Register)",
         );
-        console.log(
-          `[useContract] Instrucciones en la transacción: ${transaction.instructions.length}`,
-        );
-
-        // Enviamos la transacción completa
-        let signature: string;
-        try {
-          signature = await sendTransaction(transaction, connection, {
-            skipPreflight: true, // A veces la simulación falla en local pero la TX es válida
-            preflightCommitment: "confirmed", // Usamos confirmed para mayor seguridad
-          });
-        } catch (signError: any) {
-          console.error(
-            "[useContract] Error crítico al firmar/enviar:",
-            signError,
-          );
-          // Si el error contiene "Plugin Closed", intentamos dar más contexto
-          if (signError.message?.includes("Plugin Closed")) {
-            throw new Error(
-              "La wallet se cerró (Plugin Closed). Esto puede ocurrir por un timeout o un fallo en la simulación de la extensión.",
-            );
-          }
-          throw signError;
-        }
-
-        console.log(
-          "[useContract] Transacción enviada satisfactoriamente. Firma:",
-          signature,
-        );
-
-        // Confirmar la transacción
-        const confirmation = await connection.confirmTransaction(
-          {
-            signature,
-            blockhash,
-            lastValidBlockHeight,
-          },
-          "confirmed",
-        );
-
-        if (confirmation.value.err) {
-          throw new Error(
-            `La transacción falló en la red: ${JSON.stringify(confirmation.value.err)}`,
-          );
-        }
-
-        console.log("[useContract] ¡Pago con EURT confirmado exitosamente!");
-
-        // Disparar el evento global para que la UI de balance se actualice
         window.dispatchEvent(new Event("refresh-eurt-balance"));
 
         return { signature, error: null };
       } catch (error: any) {
-        console.error("[useContract] El pago con EURT ha fallado:", error);
-
-        // Errores comunes de la wallet que podemos traducir a un mensaje más amigable
-        if (
-          error.name === "WalletSignTransactionError" ||
-          (error.message &&
-            error.message.includes("User rejected the request")) ||
-          (error.message &&
-            error.message.toLowerCase().includes("user rejected"))
-        ) {
-          return {
-            signature: null,
-            error: "Has cancelado la transacción en tu billetera.",
-          };
-        }
-
-        // Traducir el error "Plugin Closed" de Backpack
-        if (
-          error.name === "WalletSendTransactionError" ||
-          (error.message &&
-            error.message.toLowerCase().includes("plugin closed"))
-        ) {
-          // El plugin se cerró prematuramente, pero la transacción pudo haberse enviado a la red.
-          // Para no dejar al usuario bloqueado, notificamos el problema pero sugerimos revisar el balance.
-          return {
-            signature: null,
-            error:
-              "La extensión de la billetera se cerró de forma inesperada. Verifica tu balance para confirmar si el pago se realizó.",
-          };
-        }
-
-        if (error.logs) {
-          console.error(
-            "[useContract] Detalles de Simulación de Solana:",
-            error.logs,
-          );
-        }
-
-        return {
-          signature: null,
-          error:
-            error.message || "La transacción fue rechazada o falló en la red.",
-        };
+        return { signature: null, error: error.message };
       }
     },
-    [publicKey, connection, sendTransaction],
+    [
+      publicKey,
+      connection,
+      program,
+      executeTransaction,
+      getRegisterCustomerInstruction,
+    ],
   );
 
   const createInvoice = useCallback(
@@ -655,102 +457,82 @@ export function useContract() {
       paymentTxHash: string,
       ipfsCid: string,
     ) => {
-      if (!program || !publicKey || !sendTransaction) return null;
+      if (!program || !publicKey) return null;
 
       try {
-        console.log("Registrando factura en el Smart Contract...");
-
-        const companyIdBN = new BN(companyId);
-        const totalAmountBN = new BN(
-          Math.round(parseFloat(totalAmount) * 1000000),
-        );
-
-        const [globalStatePda] = PublicKey.findProgramAddressSync(
-          [Buffer.from("global-state")],
+        const instructions: TransactionInstruction[] = [];
+        const [globalStatePda] = findPDA(
+          [SEEDS.GLOBAL_STATE],
           program.programId,
         );
-
         const globalStateAccount =
           (program.account as any).globalState ||
           (program.account as any).GlobalState;
-        if (!globalStateAccount)
-          throw new Error('Account "globalState" not found in program');
-        const globalStateRaw: any =
-          await globalStateAccount.fetch(globalStatePda);
+        const state = await globalStateAccount.fetch(globalStatePda);
 
-        const [invoicePda] = PublicKey.findProgramAddressSync(
-          [
-            Buffer.from("invoice"),
-            globalStateRaw.nextInvoiceId.toArrayLike(Buffer, "le", 8),
-          ],
+        const [invoicePda] = findPDA(
+          [SEEDS.INVOICE, state.nextInvoiceId.toArrayLike(Buffer, "le", 8)],
+          program.programId,
+        );
+        const [cartPda] = findPDA(
+          [SEEDS.CART, publicKey.toBuffer()],
+          program.programId,
+        );
+        const [customerPda] = findPDA(
+          [SEEDS.CUSTOMER, publicKey.toBuffer()],
           program.programId,
         );
 
-        const [cartPda] = PublicKey.findProgramAddressSync(
-          [Buffer.from("shopping-cart"), publicKey.toBuffer()],
-          program.programId,
+        const totalBN = new BN(Math.round(parseFloat(totalAmount) * 1000000));
+
+        // A. Instruction: Create Invoice
+        instructions.push(
+          await program.methods
+            .createInvoice(new BN(companyId), totalBN, ipfsCid)
+            .accounts({
+              globalState: globalStatePda,
+              invoice: invoicePda,
+              cart: cartPda,
+              user: publicKey,
+              systemProgram: SystemProgram.programId,
+            } as any)
+            .instruction(),
         );
 
-        const tx = await program.methods
-          .createInvoice(companyIdBN, totalAmountBN, ipfsCid)
-          .accounts({
-            globalState: globalStatePda,
-            invoice: invoicePda,
-            cart: cartPda,
-            user: publicKey,
-            systemProgram: SystemProgram.programId,
-          } as any)
-          .rpc();
-
-        console.log("Factura registrada exitosamente on-chain. Firma:", tx);
-
-        // Llamar a process_payment
-        const [customerPda] = PublicKey.findProgramAddressSync(
-          [Buffer.from("customer"), publicKey.toBuffer()],
-          program.programId,
-        );
-
-        console.log("Procesando pago en el Smart Contract...");
-        const tx2 = await (
+        // B. Instruction: Link Payment Hash On-chain
+        const processMethod =
           program.methods.processPayment ||
-          (program.methods as any).process_payment
-        )(paymentTxHash)
-          .accounts({
-            invoice: invoicePda,
-            customer: customerPda,
-            authority: publicKey,
-          } as any)
-          .rpc();
-        console.log("Pago procesado exitosamente on-chain. Firma:", tx2);
+          (program.methods as any).process_payment;
+        instructions.push(
+          await processMethod(paymentTxHash)
+            .accounts({
+              invoice: invoicePda,
+              customer: customerPda,
+              authority: publicKey,
+            } as any)
+            .instruction(),
+        );
 
-        return tx;
+        return await executeTransaction(
+          instructions,
+          "Atomic Invoice Creation & Payment Link",
+        );
       } catch (error) {
-        console.error("Error al registrar factura on-chain:", error);
+        console.error("[useContract] CreateInvoice error:", error);
         return null;
       }
     },
-    [program, publicKey, connection, sendTransaction],
+    [program, publicKey, executeTransaction],
   );
 
   const getCustomerInvoices = useCallback(
     async (customerAddress: string) => {
       if (!program) return [];
-
       try {
-        console.log("[useContract] Obteniendo facturas del cliente...");
         const invoiceAccount =
           (program.account as any).invoice || (program.account as any).Invoice;
-        if (!invoiceAccount)
-          throw new Error("Account 'invoice' not found in program IDL");
-
-        // Fetch all invoices for this customer
         const allInvoices = await invoiceAccount.all([
-          {
-            memcmp: {
-              offset: 8 + 8 + 8, // discriminator + id + company_id
-              bytes: customerAddress,
-            },
-          },
+          { memcmp: { offset: 8 + 8 + 8, bytes: customerAddress } },
         ]);
 
         return allInvoices.map((inv: any) => ({
@@ -772,55 +554,48 @@ export function useContract() {
           isPaid:
             inv.account.status &&
             (!!inv.account.status.Paid || !!inv.account.status.paid),
-          items: inv.account.items || [], // Fallback para evitar errores en la UI
           publicKey: inv.publicKey.toBase58(),
         }));
-      } catch (error) {
-        console.error("[useContract] Error al obtener facturas:", error);
+      } catch {
         return [];
       }
     },
     [program],
   );
 
-  const getInvoice = useCallback(
-    async (invoiceId: any) => {
-      if (!program) return null;
-      try {
-        console.warn("[useContract] getInvoice is currently disabled.");
-        return null;
-      } catch (error) {
-        console.error(
-          `[useContract] Error getting invoice ${invoiceId}:`,
-          error,
-        );
-        return null;
-      }
-    },
-    [program],
-  );
+  // 7. Legacy & Helper methods for backward compatibility
+  const calculateTotal = useCallback(async () => {
+    const items = await getCart();
+    const products = await getAllProducts();
+    const total = items.reduce((acc, item) => {
+      const p = products.find((prod) => prod.id === item.productId);
+      return acc + (p ? parseFloat(p.price) * item.quantity : 0);
+    }, 0);
+    return total.toFixed(2);
+  }, [getCart, getAllProducts]);
+
+  const getCartItemCount = useCallback(async () => {
+    const items = await getCart();
+    return items.reduce((acc, item) => acc + item.quantity, 0);
+  }, [getCart]);
 
   const contract = useMemo(() => {
     if (!program) return null;
     return {
       ...program,
-      getInvoice,
+      getInvoice: async () => null,
       isCustomerRegistered: async () => true,
       getCustomer: async () => ({
         isRegistered: true,
-        customerAddress: walletAddress,
+        customerAddress: publicKey?.toBase58(),
       }),
-      owner: async () => {
-        // En el programa actual, no hay una cuenta de estado global.
-        // Retornamos la dirección del administrador del fixture por defecto.
-        return "7eCTmt5LYSqnjgw8jebHjUzf8X7omxEpxYHbsXsmPtZQ";
-      },
+      owner: async () => DEFAULT_MERCHANT.toBase58(),
     };
-  }, [program, walletAddress, getInvoice]);
+  }, [program, publicKey]);
 
   return {
     contract,
-    account,
+    account: publicKey?.toBase58() || null,
     getAllProducts,
     getCart,
     addToCart,
@@ -831,8 +606,8 @@ export function useContract() {
     clearCart,
     getCustomerInvoices,
     getCartItemCount,
-    getInvoice,
-    checkAndRegisterCustomer,
+    getInvoice: async () => null,
+    checkAndRegisterCustomer: async () => true, // Automated in processPayment
     processPayment,
   };
 }
